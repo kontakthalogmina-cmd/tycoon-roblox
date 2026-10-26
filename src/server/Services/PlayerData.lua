@@ -47,6 +47,11 @@ local TEMPLATE = {
 	EquippedEggSkin = "classic",
 	DefenseLevel = 0,
 	Defenses = {}, -- [defenseId] = ile sztuk stoi na działce
+	Chicks = {}, -- lista { uid, type, level, xp, training, injuredUntil }
+	ChickNextId = 0,
+	CampLevel = 1,
+	WarCooldownUntil = 0, -- os.time()
+	WarShieldUntil = 0, -- os.time(), ochrona po przegranej wojnie
 	Eggs = 0, -- waluta na bronie (🥚), zdobywana z linii produkcyjnej
 	OwnedWeapons = {},
 	EquippedWeapon = "",
@@ -189,6 +194,10 @@ function PlayerData.Snapshot(data)
 		EquippedEggSkin = data.EquippedEggSkin,
 		DefenseLevel = data.DefenseLevel,
 		Defenses = data.Defenses,
+		Chicks = data.Chicks,
+		CampLevel = data.CampLevel,
+		WarCooldownUntil = data.WarCooldownUntil,
+		WarShieldUntil = data.WarShieldUntil,
 		Eggs = data.Eggs,
 		OwnedWeapons = data.OwnedWeapons,
 		EquippedWeapon = data.EquippedWeapon,

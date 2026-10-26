@@ -18,6 +18,7 @@ local LineConfig = require(Config.ProductionLine)
 local Raids = require(Config.Raids)
 local Weapons = require(Config.Weapons)
 local Defenses = require(Config.Defenses)
+local Chicks = require(Config.Chicks)
 local EggOdds = require(Shared.EggOdds)
 local OreNeeds = require(Shared.OreNeeds)
 local Format = require(Shared.Format)
@@ -874,12 +875,200 @@ renderRaids = function()
 			table.insert(lines, string.format('<font color="#FFD25A">💰 Obrabowałeś %s: +%s</font>', entry.name, Format.money(entry.amount)))
 		elseif entry.kind == "raidLost" then
 			table.insert(lines, string.format("❌ Nieudany napad na %s", entry.name))
+		elseif entry.kind == "warLost" then
+			table.insert(lines, string.format('<font color="#FF7A7A">🐥⚔️ Armia %s pokonała Twoją działkę: -%s</font>', entry.name, Format.money(entry.amount)))
+		elseif entry.kind == "warDefended" then
+			table.insert(lines, string.format('<font color="#7CFF9A">🛡️ Odparłeś armię pisklaków %s</font>', entry.name))
+		elseif entry.kind == "warWon" then
+			table.insert(lines, string.format('<font color="#FFD25A">🏆 Twoja armia pokonała %s: +%s</font>', entry.name, Format.money(entry.amount)))
 		end
 	end
 	logLabel.Text = #lines > 0 and table.concat(lines, "\n") or "Jeszcze nikt Cię nie napadł."
 end
 
-local robuxPage = addTab("robux", "💎 Robux", C.robux, 9)
+-- Zakładka: Pisklaki ------------------------------------------------------
+local CHICK_ACCENT = Color3.fromRGB(255, 200, 60)
+local chickPage = addTab("chicks", "🐣 Pisklaki", CHICK_ACCENT, 9)
+sectionTitle(chickPage, 0, "Pisklaki")
+local hatchCard = card(chickPage, 1, CHICK_ACCENT, "🐣")
+hatchCard.title.Text = "Wykluj pisklaka"
+hatchCard.button.Activated:Connect(function()
+	Remotes.HatchChick:FireServer()
+end)
+local campCard = card(chickPage, 2, Color3.fromRGB(150, 110, 60), "🏕️")
+campCard.button.Activated:Connect(function()
+	Remotes.UpgradeCamp:FireServer()
+end)
+sectionTitle(chickPage, 3, "Twoja armia")
+local chickList = make("Frame", {
+	Parent = chickPage,
+	LayoutOrder = 4,
+	BackgroundTransparency = 1,
+	Size = UDim2.new(1, 0, 0, 0),
+	AutomaticSize = Enum.AutomaticSize.Y,
+}, {
+	make("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }),
+})
+local noChicks = text({ Parent = chickList, LayoutOrder = 0, TextColor3 = C.muted, Text = "Nie masz jeszcze pisklaków. Wykluj pierwszego za jajka 🥚." })
+sectionTitle(chickPage, 5, "Wyślij na wojnę")
+local warStatus = text({ Parent = chickPage, LayoutOrder = 6, TextColor3 = C.muted, TextWrapped = true, AutomaticSize = Enum.AutomaticSize.Y, Text = "" })
+local warList = make("Frame", {
+	Parent = chickPage,
+	LayoutOrder = 7,
+	BackgroundTransparency = 1,
+	Size = UDim2.new(1, 0, 0, 0),
+	AutomaticSize = Enum.AutomaticSize.Y,
+}, {
+	make("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }),
+})
+local warRefresh = button("🔄 Odśwież", C.blue, UDim2.fromOffset(160, 38))
+warRefresh.LayoutOrder = 8
+warRefresh.Parent = chickPage
+text({
+	Parent = chickPage,
+	LayoutOrder = 9,
+	TextColor3 = C.muted,
+	TextWrapped = true,
+	AutomaticSize = Enum.AutomaticSize.Y,
+	Text = string.format(
+		"Na wojnę idą wszystkie zdrowe pisklaki. Wygrana z graczem zabiera mu %d%% gotówki, a z dzikim obozem daje nagrodę. Przegrana: pisklaki leczą się %d s. Twoją działkę bronią pisklaki w domu i budowle z zakładki 🛡️ Obrona.",
+		math.floor(Chicks.war.stealPercent * 100 + 0.5),
+		Chicks.war.injuredTime
+	),
+})
+
+local chickCards = {} -- [uid] = card
+local function chickStatus(chick, now)
+	if (chick.injuredUntil or 0) > now then
+		return string.format("🤕 leczy się %d s", chick.injuredUntil - now), "injured"
+	elseif chick.level >= Chicks.maxLevel then
+		return "⭐ maksymalny poziom", "max"
+	elseif chick.training then
+		return "💪 trenuje", "training"
+	end
+	return "😴 odpoczywa", "idle"
+end
+
+local function renderChicks()
+	local chicks = state.Chicks or {}
+	local now = math.floor(workspace:GetServerTimeNow())
+	hatchCard.desc.Text = string.format("Masz %d/%d pisklaków i 🥚 %s jajek. Szczęście z fabryki zwiększa szansę na rzadsze rodzaje.", #chicks, Chicks.maxChicks, Format.number(state.Eggs or 0))
+	hatchCard.button.Text = "🥚 " .. Chicks.hatchPrice
+	setButtonColor(hatchCard.button, (#chicks < Chicks.maxChicks and (state.Eggs or 0) >= Chicks.hatchPrice) and C.green or C.disabled)
+
+	local campLevel = state.CampLevel or 1
+	local camp = Chicks.camp[campLevel] or Chicks.camp[1]
+	local nextCamp = Chicks.camp[campLevel + 1]
+	campCard.title.Text = string.format("Obóz treningowy poz. %d", campLevel)
+	if nextCamp then
+		campCard.desc.Text = string.format("Miejsca: %d → %d  •  XP co %d s: %s → %s", camp.slots, nextCamp.slots, Chicks.trainTick, tostring(camp.xp), tostring(nextCamp.xp))
+		campCard.button.Visible = true
+		campCard.button.Text = Format.money(nextCamp.price)
+		setButtonColor(campCard.button, state.Cash >= nextCamp.price and C.green or C.disabled)
+	else
+		campCard.desc.Text = string.format("Miejsca: %d  •  %s XP co %d s. Maksymalny poziom!", camp.slots, tostring(camp.xp), Chicks.trainTick)
+		campCard.button.Visible = false
+	end
+
+	local training = 0
+	for _, chick in chicks do
+		if chick.training then
+			training += 1
+		end
+	end
+	local seen = {}
+	for i, chick in chicks do
+		seen[chick.uid] = true
+		local chickType = Chicks.byId[chick.type] or Chicks.types[1]
+		local c = chickCards[chick.uid]
+		if not c then
+			c = card(chickList, i, chickType.color, "🐤")
+			local uid = chick.uid
+			c.button.Activated:Connect(function()
+				local current = c.button:GetAttribute("Training")
+				Remotes.TrainChick:FireServer(uid, not current)
+			end)
+			chickCards[uid] = c
+		end
+		c.frame.LayoutOrder = i
+		local status, kind = chickStatus(chick, now)
+		c.title.Text = string.format("%s  poz. %d", chickType.name, chick.level)
+		local xpText = chick.level < Chicks.maxLevel and string.format("XP %d/%d", math.floor(chick.xp), Chicks.xpToNext(chick.level)) or "XP max"
+		c.desc.Text = string.format("Siła %d  •  %s  •  %s", Chicks.power(chick), xpText, status)
+		c.button:SetAttribute("Training", chick.training == true)
+		if kind == "training" then
+			c.button.Text = "Przestań"
+			setButtonColor(c.button, C.orange)
+		elseif kind == "max" or kind == "injured" then
+			c.button.Text = kind == "max" and "Gotowy" or "Ranny"
+			setButtonColor(c.button, C.disabled)
+		else
+			c.button.Text = "Trenuj"
+			setButtonColor(c.button, training < camp.slots and C.green or C.disabled)
+		end
+	end
+	for uid, c in chickCards do
+		if not seen[uid] then
+			c.frame:Destroy()
+			chickCards[uid] = nil
+		end
+	end
+	noChicks.Visible = #chicks == 0
+end
+
+local GetWarTargets = Remotes:WaitForChild("GetWarTargets")
+local function refreshWar()
+	for _, child in warList:GetChildren() do
+		if child:IsA("Frame") then
+			child:Destroy()
+		end
+	end
+	warStatus.Text = "Ładowanie..."
+	local ok, result = pcall(function()
+		return GetWarTargets:InvokeServer()
+	end)
+	if not ok or not result then
+		warStatus.Text = "Nie udało się pobrać listy."
+		return
+	end
+	local blocked = result.atWar or result.cooldown > 0 or result.count == 0
+	if result.atWar then
+		warStatus.Text = "Twoja armia jest w drodze..."
+	elseif result.count == 0 then
+		warStatus.Text = "Nie masz zdrowych pisklaków."
+	elseif result.cooldown > 0 then
+		warStatus.Text = string.format("Armia (siła %d) odpoczywa jeszcze %d s.", result.power, result.cooldown)
+	else
+		warStatus.Text = string.format("Twoja armia: %d pisklaków, siła %d. Wybierz cel:", result.count, result.power)
+	end
+	local order = 0
+	local function addTarget(icon, color, title, defense, extra, targetId, available)
+		order += 1
+		local c = card(warList, order, available and color or C.disabled, icon)
+		c.title.Text = title
+		local chance = result.power > 0 and Chicks.winChance(result.power, defense) or 0
+		c.desc.Text = string.format("Obrona %d  •  szansa wygranej %d%%%s", defense, math.floor(chance * 100 + 0.5), extra)
+		c.button.Text = available and "⚔️ Atakuj" or "🛡️ Tarcza"
+		setButtonColor(c.button, (available and not blocked) and C.red or C.disabled)
+		c.button.Activated:Connect(function()
+			if available and not blocked then
+				Remotes.SendToWar:FireServer(targetId)
+				task.delay(0.3, refreshWar)
+			end
+		end)
+	end
+	for _, target in result.players do
+		local extra = target.shield > 0 and string.format("  •  tarcza %d s", target.shield) or ("  •  łup " .. Format.money(math.floor(target.cash * Chicks.war.stealPercent)))
+		addTarget("🏰", C.red, target.name, target.defense, extra, target.userId, target.shield <= 0)
+	end
+	for i, bandit in Chicks.war.bandits do
+		addTarget(bandit.icon, Color3.fromRGB(120, 90, 60), bandit.name, bandit.power, string.format("  •  nagroda %s + 🥚 %d", Format.money(bandit.cash), bandit.eggs), "bandit:" .. i, true)
+	end
+end
+warRefresh.Activated:Connect(refreshWar)
+tabCallbacks.chicks = refreshWar
+
+local robuxPage = addTab("robux", "💎 Robux", C.robux, 10)
 sectionTitle(robuxPage, 0, "Sklep Robux")
 local robuxFactory = card(robuxPage, 1, C.orange, "🏭")
 robuxFactory.title.Text = "Ulepszenie fabryki"
@@ -1140,6 +1329,7 @@ local function render()
 	renderRaids()
 	renderWeapons()
 	renderDefenses()
+	renderChicks()
 end
 
 ---------------------------------------------------------------------------

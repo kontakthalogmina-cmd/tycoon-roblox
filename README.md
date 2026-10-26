@@ -16,6 +16,7 @@ Gra typu tycoon, w której celem jest zarobienie jak największej ilości pieni�
 10. **Napady:** od poziomu fabryki 3 możesz w zakładce Napady wybrać bazę innego gracza. Trafiasz pod jego Bramę napadu i masz 90 s, żeby dobiec do **skarbca** i przytrzymać E. Udany napad zabiera ofierze 20% gotówki i 2 poziomy fabryki, a ofiara widzi nick napastnika i dostaje 10 min tarczy.
 11. **Skarbiec:** za $ wzmacniasz skarbiec (dłuższy rabunek). Gdy stoisz przy swoim skarbcu, nie da się go obrabować, a w czasie napadu możesz bić napastnika kilofem. Udana obrona = brak strat.
 12. **Obrona działki (zakładka 🛡️ Obrona):** miny (wybuchają pod obcym), niewidzialne pułapki (widzi je tylko właściciel, unieruchamiają), działa i wieże czarodzieja. Stoją na stałych miejscach działki i same atakują każdego obcego, który wejdzie na działkę. Każda kolejna sztuka jest droższa.
+13. **Pisklaki (zakładka 🐣 Pisklaki):** wykluwasz je za jajka 🥚 (5 rodzajów, od Żółtego pisklaka po Smoczego), trenujesz w obozie treningowym na działce (XP i poziomy, obóz ulepszasz za $) i wysyłasz całą armię na wojnę: na innych graczy (wygrana zabiera 8% ich gotówki) albo na dzikie obozy (nagroda $ i jajka). Działki bronią pisklaki w domu i budowle obronne.
 12. **Walka:** jajkiem do rzucania (bez limitu) przewracasz i odpychasz innych. Za jajka 🥚 z linii produkcyjnej kupujesz brainrot karabiny. Pokonanie gracza (także zrzucenie go z wyspy) zabiera mu 10% gotówki jako wielkie złote jajko, które trzeba donieść do swojej działki. Trafienie niosącego sprawia, że je upuszcza.
 12. Kopalnia pokazuje tylko rudy potrzebne do kolejnych ulepszeń fabryki.
 13. Ranking w tabeli graczy: `Pieniądze` i `Zarobione`.
@@ -100,7 +101,7 @@ Cała logika (kasa, kopanie, zakupy) liczy się na serwerze. Klient tylko wysył
 ## Plan kolejnych etapów
 
 - ~~Etap 2: obrona jako osobny system~~ (zrobione: `Config/Defenses.lua`, `Services/DefenseService.lua`).
-- Etap 3: pisklaki z jajek, obozy treningowe i wysyłanie piskląt na wojnę.
+- ~~Etap 3: pisklaki, obozy treningowe, wojna~~ (zrobione: `Config/Chicks.lua`, `Services/ChickService.lua`).
 
 ## Pomysły na dalszy rozwój
 

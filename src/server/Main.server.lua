@@ -14,10 +14,12 @@ local PickaxeTool = require(Services.PickaxeTool)
 local RaidService = require(Services.RaidService)
 local CombatService = require(Services.CombatService)
 local DefenseService = require(Services.DefenseService)
+local ChickService = require(Services.ChickService)
 local MonetizationService = require(Services.MonetizationService)
 
 local LuckLevels = require(game:GetService("ReplicatedStorage").Shared.Config.LuckLevels)
 local Raids = require(game:GetService("ReplicatedStorage").Shared.Config.Raids)
+local Chicks = require(game:GetService("ReplicatedStorage").Shared.Config.Chicks)
 
 local AUTOSAVE_INTERVAL = 60
 
@@ -38,6 +40,7 @@ MonetizationService.Init()
 RaidService.Init()
 CombatService.Init()
 DefenseService.Init()
+ChickService.Init()
 
 local function setupLeaderstats(player: Player, data)
 	local leaderstats = Instance.new("Folder")
@@ -69,6 +72,7 @@ local function onPlayerAdded(player: Player)
 	end
 	-- Starsze zapisy mogły mieć więcej poziomów szczęścia niż obecnie.
 	data.LuckLevel = math.clamp(data.LuckLevel, 1, #LuckLevels)
+	data.CampLevel = math.clamp(data.CampLevel, 1, #Chicks.camp)
 	data.DefenseLevel = math.clamp(data.DefenseLevel, 0, #Raids.defenseLevels)
 	setupLeaderstats(player, data)
 	if not PlotService.Assign(player) then
@@ -81,6 +85,7 @@ local function onPlayerAdded(player: Player)
 	CombatService.Setup(player)
 	RaidService.RefreshDefense(player)
 	DefenseService.Refresh(player)
+	ChickService.Refresh(player)
 	FactoryService.UpdateLabel(player)
 	PlayerData.MarkChanged(player)
 end
@@ -94,6 +99,7 @@ local function onPlayerRemoving(player: Player)
 	MineService.Stop(player)
 	ProductionLineService.Stop(player)
 	DefenseService.Clear(player)
+	ChickService.PlayerLeft(player)
 	PlotService.Release(player)
 	PlayerData.Save(player)
 	PlayerData.Release(player)

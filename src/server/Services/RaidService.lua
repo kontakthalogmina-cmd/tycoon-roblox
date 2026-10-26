@@ -47,6 +47,8 @@ local function addLog(player: Player, entry)
 	PlayerData.MarkChanged(player)
 end
 
+RaidService.AddLog = addLog
+
 local function sendState(raid, active: boolean)
 	if raid.attacker.Parent then
 		Remotes.RaidState:FireClient(raid.attacker, active and {

@@ -23,6 +23,10 @@ local NAMES = {
 	"FireWeapon", -- klient -> serwer: strzał z karabinu w punkt (Vector3)
 	"BuyWeapon", -- klient -> serwer: kup/wybierz karabin (id)
 	"Knockback", -- serwer -> klient: przewrócenie (prędkość, czas)
+	"HatchChick", -- klient -> serwer: wykluj pisklaka za jajka
+	"TrainChick", -- klient -> serwer: trenuj / przestań (uid, bool)
+	"UpgradeCamp", -- klient -> serwer: ulepsz obóz treningowy za $
+	"SendToWar", -- klient -> serwer: wyślij armię (userId albo "bandit:N")
 }
 
 local folder = Instance.new("Folder")
