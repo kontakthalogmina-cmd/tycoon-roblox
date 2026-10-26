@@ -137,6 +137,24 @@ function PlotService.Init()
 	local folder = Instance.new("Folder")
 	folder.Name = "Plots"
 	folder.Parent = workspace
+
+	-- Plac startowy pośrodku, żeby gracz nie spadał w pustkę przed teleportem na działkę.
+	local hub = part({
+		Name = "Hub",
+		Size = Vector3.new(40, 1, 40),
+		CFrame = CFrame.new(0, 0.5, 0),
+		Color = Color3.fromRGB(200, 200, 205),
+		Material = Enum.Material.SmoothPlastic,
+	})
+	hub.Parent = folder
+	local spawn = Instance.new("SpawnLocation")
+	spawn.Anchored = true
+	spawn.Size = Vector3.new(8, 1, 8)
+	spawn.CFrame = CFrame.new(0, 1.5, 0)
+	spawn.Neutral = true
+	spawn.Duration = 0
+	spawn.Parent = folder
+
 	for i = 1, PLOT_COUNT do
 		plots[i] = buildPlot(i)
 	end

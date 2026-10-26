@@ -45,7 +45,9 @@ Mapa jest budowana skryptem (8 działek), więc nie trzeba niczego ustawiać rę
 4. Otwórz pustą grę (Baseplate) w Studio, w zakładce Rojo kliknij **Connect**.
 5. Kliknij **Play**.
 
-Alternatywnie zbuduj plik gry: `rojo build -o TycoonKopalnia.rbxl` i otwórz go w Studio.
+Najszybciej bez Rojo: otwórz w Studio gotowy plik `TycoonKopalnia.rbxlx` (File -> Open from File) i kliknij **Play**.
+
+Możesz też zbudować plik gry sam: `rojo build -o TycoonKopalnia.rbxl` i otwórz go w Studio.
 
 ### Zapis danych
 
