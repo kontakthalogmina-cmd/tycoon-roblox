@@ -1,6 +1,7 @@
 -- Przydziela graczom działki. Każda działka leży daleko od innych,
 -- więc gracz widzi tylko swój teren.
 local PlotBuilder = require(script.Parent.PlotBuilder)
+local Remotes = require(script.Parent.Remotes)
 
 local PlotService = {}
 
@@ -26,7 +27,15 @@ function PlotService.Init()
 
 	for i = 1, PLOT_COUNT do
 		local origin = CFrame.new(i * PLOT_DISTANCE, 0, 0)
-		plots[i] = PlotBuilder.Build(i, origin, folder)
+		local plot = PlotBuilder.Build(i, origin, folder)
+		plots[i] = plot
+		plot.shopPrompt.Triggered:Connect(function(player)
+			if player == plot.owner then
+				Remotes.OpenShop:FireClient(player)
+			else
+				Remotes.notify(player, "To nie Twój sklep. Twoja budka stoi na Twojej działce.")
+			end
+		end)
 	end
 end
 

@@ -12,7 +12,7 @@ local Remotes = require(script.Parent.Remotes)
 
 local MineService = {}
 
-local HIT_DISTANCE = 16
+local HIT_DISTANCE = 18
 local ROCK_COLOR = Color3.fromRGB(105, 100, 98)
 
 -- [Player] = { plot, slots = { [i] = Model }, nodes = { [Model] = i }, pending = { [i] = true }, lastHit, folder }
@@ -63,7 +63,7 @@ local function buildNode(ore, base: CFrame)
 	local model = Instance.new("Model")
 	model.Name = ore.id
 
-	local size = Vector3.new(math.random(45, 60) / 10, math.random(35, 50) / 10, math.random(45, 60) / 10)
+	local size = Vector3.new(math.random(36, 46) / 10, math.random(30, 40) / 10, math.random(36, 46) / 10)
 	local rockCFrame = base * CFrame.new(0, size.Y / 2 - 0.4, 0) * CFrame.Angles(0, math.random() * math.pi * 2, math.rad(math.random(-8, 8)))
 	local isPlainRock = ore.id == "stone"
 	local rock = newPart(model, size, rockCFrame, isPlainRock and ore.color or ROCK_COLOR, Enum.Material.Slate)
@@ -177,6 +177,7 @@ local function onHit(player: Player, node)
 		return
 	end
 	if (root.Position - node:GetPivot().Position).Magnitude > HIT_DISTANCE then
+		Remotes.notify(player, "Podejdź bliżej do skały!")
 		return
 	end
 

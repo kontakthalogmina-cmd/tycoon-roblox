@@ -6,13 +6,14 @@ Gra typu tycoon, w której celem jest zarobienie jak największej ilości pieni�
 
 1. Każdy gracz dostaje własną działkę, daleko od innych, więc widzi tylko swój teren.
 2. Z **fabryki** wychodzi **linia produkcyjna**: co 2 sekundy taśmą jedzie jajko do skupu i zamienia się w $.
-3. Jajka mają **rzadkości** (Zwykłe, Niezwykłe, Rzadkie, Epickie, Legendarne, Mityczne) z mnożnikiem wartości od x1 do x200.
+3. Jajka mają **rzadkości** (Zwykłe, Niezwykłe, Rzadkie, Epickie, Legendarne, Mityczne) z mnożnikiem wartości od x1 do x200. Każda rzadkość ma swój kolor, Legendarne mienią się tęczą, a Mityczne pulsują.
 4. **Szczęście** (kupowane za $) zwiększa szansę na lepsze jajka.
 5. **Skórki jajek** (kupowane za $) zmieniają wygląd jajek i podnoszą ich wartość.
-6. **Kopalnia** jest wkopana pod ziemię: schodzisz rampą i rozbijasz skały z żyłami rudy **kilofem** trzymanym w ręce (klik = zamach).
+6. **Kopalnia** jest w górze: tunelem z torami schodzisz do jaskini i rozbijasz skały z żyłami rudy **kilofem** trzymanym w ręce (klik lub dotknięcie = zamach; celuje w skałę pod kursorem albo najbliższą).
 7. **Fabrykę ulepszasz surowcami** z kopalni albo **za Robux**. Wyższy poziom fabryki = droższe jajka.
 8. Za $ ulepszasz **kopalnię** (więcej skał, nowe rudy) i kupujesz **lepsze kilofy** (twardsze rudy, mocniejsze uderzenia).
-9. Ranking w tabeli graczy: `Pieniądze` i `Zarobione`.
+9. **Sklep** otwierasz przyciskiem na dole ekranu albo przy budce SKLEP na działce. Zakładki: Fabryka, Kopalnia, Kilofy, Szczęście, Skórki, Robux.
+10. Ranking w tabeli graczy: `Pieniądze` i `Zarobione`.
 
 ## Struktura projektu (Rojo)
 
@@ -45,6 +46,7 @@ src/server/                  -> ServerScriptService.Server
 src/client/                  -> StarterPlayerScripts.Client
   Main.client.lua            GUI: pieniądze, surowce, panel ulepszeń
   Mining.client.lua          zamach kilofem i trafianie w skały
+  Effects.client.lua         tęczowe i pulsujące jajka
 ```
 
 Mapa jest budowana skryptem (8 działek, teren z Terrain), więc nie trzeba niczego ustawiać ręcznie w Studio.

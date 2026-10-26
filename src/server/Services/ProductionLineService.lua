@@ -1,5 +1,6 @@
 -- Linia produkcyjna: z fabryki co chwilę wyjeżdża jajko, jedzie taśmą do skupu i zamienia się w $.
 -- Rzadkość jajka losowana jest ze szczęściem gracza, wygląd zależy od skórki.
+local CollectionService = game:GetService("CollectionService")
 local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -29,41 +30,63 @@ local function makeEgg(skin, rarity, rarityIndex: number, start: CFrame)
 	egg.CanQuery = false
 	egg.Size = Vector3.new(2, 2.6, 2)
 	egg.CFrame = start
-	egg.Material = skin.material
-	egg.Color = skin.rainbow and Color3.fromHSV(math.random(), 0.75, 1) or skin.color
 	local mesh = Instance.new("SpecialMesh")
 	mesh.MeshType = Enum.MeshType.Sphere
 	mesh.Parent = egg
 
+	if rarityIndex == 1 then
+		-- Zwykłe jajko wygląda jak wybrana skórka.
+		egg.Material = skin.material
+		egg.Color = skin.color
+		if skin.rainbow then
+			CollectionService:AddTag(egg, "Rainbow")
+		end
+	else
+		-- Rzadsze jajka mają kolor swojej rzadkości i świecą.
+		egg.Material = rarityIndex >= 3 and Enum.Material.Neon or Enum.Material.SmoothPlastic
+		egg.Color = rarity.color
+		if rarity.effect == "rainbow" then
+			CollectionService:AddTag(egg, "Rainbow")
+		elseif rarity.effect == "pulse" then
+			CollectionService:AddTag(egg, "Pulse")
+		end
+	end
+
 	if rarityIndex >= 2 then
 		local gui = Instance.new("BillboardGui")
-		gui.Size = UDim2.fromOffset(100, 24)
+		gui.Size = UDim2.fromOffset(110, 26)
 		gui.StudsOffset = Vector3.new(0, 2.4, 0)
 		gui.MaxDistance = 80
 		local label = Instance.new("TextLabel")
 		label.Size = UDim2.fromScale(1, 1)
 		label.BackgroundTransparency = 1
 		label.TextScaled = true
-		label.Font = Enum.Font.GothamBlack
+		label.Font = Enum.Font.FredokaOne
 		label.TextColor3 = rarity.color
-		label.TextStrokeTransparency = 0.2
+		label.TextStrokeTransparency = 0.1
 		label.Text = rarity.name
 		label.Parent = gui
 		gui.Parent = egg
+		if rarity.effect == "rainbow" then
+			CollectionService:AddTag(label, "Rainbow")
+		end
 	end
 	if rarityIndex >= 3 then
+		local glow = Instance.new("PointLight")
+		glow.Color = rarity.color
+		glow.Range = 6 + rarityIndex * 2
+		glow.Brightness = 1 + rarityIndex * 0.4
+		glow.Parent = egg
+		if rarity.effect == "rainbow" then
+			CollectionService:AddTag(glow, "Rainbow")
+		end
+	end
+	if rarityIndex >= 4 then
 		local sparkles = Instance.new("Sparkles")
 		sparkles.SparkleColor = rarity.color
 		sparkles.Parent = egg
 	end
-	if rarityIndex >= 4 then
-		local glow = Instance.new("PointLight")
-		glow.Color = rarity.color
-		glow.Range = 12
-		glow.Brightness = 2
-		glow.Parent = egg
-	end
-	if rarityIndex >= 5 then
+	if rarityIndex >= 6 then
 		local fire = Instance.new("Fire")
 		fire.Color = rarity.color
 		fire.SecondaryColor = Color3.new(1, 1, 1)
@@ -89,7 +112,7 @@ local function popup(position: CFrame, text: string, color: Color3)
 	label.Size = UDim2.fromScale(1, 1)
 	label.BackgroundTransparency = 1
 	label.TextScaled = true
-	label.Font = Enum.Font.GothamBlack
+	label.Font = Enum.Font.FredokaOne
 	label.TextColor3 = color
 	label.TextStrokeTransparency = 0.2
 	label.Text = text

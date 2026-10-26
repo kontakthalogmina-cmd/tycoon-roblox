@@ -12,6 +12,7 @@ local NAMES = {
 	"UpgradeLuck", -- klient -> serwer: kup kolejny poziom szczęścia
 	"BuyEggSkin", -- klient -> serwer: kup skórkę jajek (id)
 	"EquipEggSkin", -- klient -> serwer: załóż skórkę jajek (id)
+	"OpenShop", -- serwer -> klient: otwórz sklep (budka na działce)
 }
 
 local folder = Instance.new("Folder")

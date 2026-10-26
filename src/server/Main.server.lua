@@ -13,12 +13,15 @@ local ProductionLineService = require(Services.ProductionLineService)
 local PickaxeTool = require(Services.PickaxeTool)
 local MonetizationService = require(Services.MonetizationService)
 
+local LuckLevels = require(game:GetService("ReplicatedStorage").Shared.Config.LuckLevels)
+
 local AUTOSAVE_INTERVAL = 60
 
 -- Słoneczny dzień z lekką mgiełką na horyzoncie.
 Lighting.ClockTime = 14
 Lighting.Brightness = 2.5
 Lighting.OutdoorAmbient = Color3.fromRGB(140, 140, 150)
+Lighting.Ambient = Color3.fromRGB(70, 65, 60) -- żeby w jaskini nie było zupełnie ciemno
 local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere") or Instance.new("Atmosphere")
 atmosphere.Density = 0.3
 atmosphere.Haze = 1.5
@@ -57,6 +60,8 @@ local function onPlayerAdded(player: Player)
 	if not data then
 		return
 	end
+	-- Starsze zapisy mogły mieć więcej poziomów szczęścia niż obecnie.
+	data.LuckLevel = math.clamp(data.LuckLevel, 1, #LuckLevels)
 	setupLeaderstats(player, data)
 	if not PlotService.Assign(player) then
 		player:Kick("Brak wolnych działek na tym serwerze. Spróbuj inny serwer.")
