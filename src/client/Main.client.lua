@@ -1,4 +1,4 @@
--- GUI gracza: pieniądze, surowce, ulepszenia fabryki i kopalni, sklep z kilofami.
+-- GUI gracza: pieniądze, surowce, ulepszenia fabryki i kopalni, kilofy, szczęście i skórki jajek.
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -11,6 +11,11 @@ local Pickaxes = require(Config.Pickaxes)
 local MineLevels = require(Config.MineLevels)
 local FactoryLevels = require(Config.FactoryLevels)
 local Products = require(Config.Products)
+local LuckLevels = require(Config.LuckLevels)
+local EggSkins = require(Config.EggSkins)
+local EggRarities = require(Config.EggRarities)
+local LineConfig = require(Config.ProductionLine)
+local EggOdds = require(Shared.EggOdds)
 local Format = require(Shared.Format)
 
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
@@ -94,9 +99,10 @@ local cashLabel = label({
 	Size = UDim2.new(1, 0, 0.6, 0),
 })
 local incomeLabel = label({
-	Text = "+$0/s",
+	Text = "",
 	TextColor3 = Color3.fromRGB(120, 230, 140),
 	TextXAlignment = Enum.TextXAlignment.Center,
+	TextSize = 14,
 	Position = UDim2.fromScale(0, 0.6),
 	Size = UDim2.new(1, 0, 0.4, 0),
 })
@@ -104,7 +110,7 @@ make("Frame", {
 	Parent = gui,
 	AnchorPoint = Vector2.new(0.5, 0),
 	Position = UDim2.new(0.5, 0, 0, 8),
-	Size = UDim2.fromOffset(220, 64),
+	Size = UDim2.fromOffset(260, 64),
 	BackgroundColor3 = COLORS.panel,
 	BackgroundTransparency = 0.15,
 }, { corner(10), cashLabel, incomeLabel })
@@ -218,9 +224,57 @@ for i, pickaxe in Pickaxes.list do
 	pickaxeRows[pickaxe.id] = btn
 end
 
+-- Szczęście
+local luckSection = section("🍀 Szczęście", 4)
+local luckInfo = info(luckSection, 1)
+local luckButton = button("Kup szczęście", COLORS.blue)
+luckButton.LayoutOrder = 2
+luckButton.Parent = luckSection
+
+-- Skórki jajek
+local skinSection = section("🥚 Skórki jajek", 5)
+local skinRows = {}
+for i, skin in EggSkins.list do
+	local swatch = make("Frame", {
+		BackgroundColor3 = skin.color,
+		Size = UDim2.fromOffset(22, 28),
+		Position = UDim2.new(0, 0, 0.5, -14),
+	}, { corner(11) })
+	if skin.rainbow then
+		make("UIGradient", {
+			Parent = swatch,
+			Color = ColorSequence.new({
+				ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 60, 60)),
+				ColorSequenceKeypoint.new(0.33, Color3.fromRGB(255, 230, 60)),
+				ColorSequenceKeypoint.new(0.66, Color3.fromRGB(60, 200, 255)),
+				ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 60, 255)),
+			}),
+			Rotation = 90,
+		})
+	end
+	local text = label({
+		Text = string.format("%s\nwartość jajek +%d%%", skin.name, math.floor((skin.bonus - 1) * 100 + 0.5)),
+		TextWrapped = true,
+		Position = UDim2.fromOffset(30, 0),
+		Size = UDim2.new(0.6, -30, 1, 0),
+		TextSize = 14,
+	})
+	local btn = button("", COLORS.blue)
+	btn.AnchorPoint = Vector2.new(1, 0.5)
+	btn.Position = UDim2.fromScale(1, 0.5)
+	btn.Size = UDim2.new(0.38, 0, 0, 32)
+	make("Frame", {
+		Parent = skinSection,
+		LayoutOrder = i,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 0, 42),
+	}, { swatch, text, btn })
+	skinRows[skin.id] = btn
+end
+
 -- Robux (ID produktów z Products.lua)
 local cashPackButton = button("Pakiet gotówki za Robux", COLORS.robux)
-local robuxSection = section("💎 Sklep Robux", 4)
+local robuxSection = section("💎 Sklep Robux", 6)
 cashPackButton.LayoutOrder = 1
 cashPackButton.Parent = robuxSection
 
@@ -296,7 +350,23 @@ mineButton.Activated:Connect(function()
 	Remotes.UpgradeMine:FireServer()
 end)
 
+luckButton.Activated:Connect(function()
+	Remotes.UpgradeLuck:FireServer()
+end)
+
 local state = nil
+for id, btn in skinRows do
+	btn.Activated:Connect(function()
+		if not state then
+			return
+		end
+		if state.OwnedEggSkins[id] then
+			Remotes.EquipEggSkin:FireServer(id)
+		else
+			Remotes.BuyEggSkin:FireServer(id)
+		end
+	end)
+end
 for id, btn in pickaxeRows do
 	btn.Activated:Connect(function()
 		if not state then
@@ -324,7 +394,9 @@ end
 
 local function render()
 	cashLabel.Text = Format.money(state.Cash)
-	incomeLabel.Text = "+" .. Format.money(FactoryLevels[state.FactoryLevel].income) .. "/s"
+	local luck = LuckLevels[state.LuckLevel].luck
+	local eggValue = FactoryLevels[state.FactoryLevel].income * LineConfig.interval
+	incomeLabel.Text = string.format("Jajko od %s  •  Szczęście x%s", Format.money(eggValue), tostring(luck))
 
 	for _, ore in Ores.list do
 		oreRows[ore.id].Text = string.format("%s: %s", ore.name, Format.number(state.Ores[ore.id] or 0))
@@ -333,15 +405,15 @@ local function render()
 	-- Fabryka
 	local nextFactory = FactoryLevels[state.FactoryLevel + 1]
 	factoryInfo.Text = string.format(
-		"Poziom %d/%d, produkcja %s/s",
+		"Poziom %d/%d, zwykłe jajko: %s",
 		state.FactoryLevel,
 		#FactoryLevels,
-		Format.money(FactoryLevels[state.FactoryLevel].income)
+		Format.money(eggValue)
 	)
 	if nextFactory then
 		factoryCost.Text = string.format(
-			"Następny poziom: %s/s\nKoszt: %s",
-			Format.money(nextFactory.income),
+			"Następny poziom: jajko %s\nKoszt: %s",
+			Format.money(nextFactory.income * LineConfig.interval),
 			costText(nextFactory.cost)
 		)
 		factoryOreButton.Visible = true
@@ -374,6 +446,37 @@ local function render()
 		mineButton.Visible = true
 	else
 		mineButton.Visible = false
+	end
+
+	-- Szczęście
+	local chances = EggOdds.chances(luck)
+	local lines = { string.format("Poziom %d/%d, szczęście x%s", state.LuckLevel, #LuckLevels, tostring(luck)) }
+	for i, rarity in EggRarities do
+		table.insert(lines, string.format("%s (x%d): %.2f%%", rarity.name, rarity.multiplier, chances[i] * 100))
+	end
+	luckInfo.Text = table.concat(lines, "\n")
+	local nextLuck = LuckLevels[state.LuckLevel + 1]
+	if nextLuck then
+		luckButton.Text = string.format("Szczęście x%s (%s)", tostring(nextLuck.luck), Format.money(nextLuck.price))
+		luckButton.BackgroundColor3 = state.Cash >= nextLuck.price and COLORS.blue or COLORS.disabled
+		luckButton.Visible = true
+	else
+		luckButton.Visible = false
+	end
+
+	-- Skórki jajek
+	for _, skin in EggSkins.list do
+		local btn = skinRows[skin.id]
+		if state.EquippedEggSkin == skin.id then
+			btn.Text = "Założona"
+			btn.BackgroundColor3 = COLORS.disabled
+		elseif state.OwnedEggSkins[skin.id] then
+			btn.Text = "Załóż"
+			btn.BackgroundColor3 = COLORS.green
+		else
+			btn.Text = Format.money(skin.price)
+			btn.BackgroundColor3 = state.Cash >= skin.price and COLORS.blue or COLORS.disabled
+		end
 	end
 
 	-- Kilofy

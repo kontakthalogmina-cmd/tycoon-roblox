@@ -1,4 +1,4 @@
--- Fabryka: produkuje $ co sekundę, ulepszana surowcami albo za Robux.
+-- Fabryka: poziom decyduje o wartości jajek na linii; ulepszana surowcami albo za Robux.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local FactoryLevels = require(ReplicatedStorage.Shared.Config.FactoryLevels)
@@ -64,17 +64,6 @@ function FactoryService.GrantLevel(player: Player): boolean
 	end
 	levelUp(player, data)
 	return true
-end
-
-function FactoryService.StartLoop()
-	task.spawn(function()
-		while true do
-			task.wait(1)
-			for player, data in PlayerData.All() do
-				PlayerData.AddCash(player, FactoryService.Income(data.FactoryLevel))
-			end
-		end
-	end)
 end
 
 return FactoryService

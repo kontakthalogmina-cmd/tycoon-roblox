@@ -1,4 +1,4 @@
--- Kopalnia gracza: spawnowanie bloków surowców i kopanie (ClickDetector).
+-- Kopalnia gracza: skały z rudą na dnie wykopu i kopanie kilofem (RemoteEvent MineHit).
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = ReplicatedStorage.Shared.Config
@@ -12,8 +12,11 @@ local Remotes = require(script.Parent.Remotes)
 
 local MineService = {}
 
-local CLICK_DISTANCE = 24
-local states = {} -- [Player] = { plot, slots = { [i] = Part }, pending = { [i] = true }, lastHit = number, folder }
+local HIT_DISTANCE = 16
+local ROCK_COLOR = Color3.fromRGB(105, 100, 98)
+
+-- [Player] = { plot, slots = { [i] = Model }, nodes = { [Model] = i }, pending = { [i] = true }, lastHit, folder }
+local states = {}
 
 local function pickOre(mineLevel: number)
 	local total = 0
@@ -42,7 +45,96 @@ local function updateMineLabel(player: Player)
 	end
 end
 
-local onHit -- forward
+local function newPart(parent, size, cframe, color, material)
+	local p = Instance.new("Part")
+	p.Anchored = true
+	p.Size = size
+	p.CFrame = cframe
+	p.Color = color
+	p.Material = material
+	p.TopSurface = Enum.SurfaceType.Smooth
+	p.BottomSurface = Enum.SurfaceType.Smooth
+	p.Parent = parent
+	return p
+end
+
+-- Skała z wbitymi kryształami/żyłami rudy.
+local function buildNode(ore, base: CFrame)
+	local model = Instance.new("Model")
+	model.Name = ore.id
+
+	local size = Vector3.new(math.random(45, 60) / 10, math.random(35, 50) / 10, math.random(45, 60) / 10)
+	local rockCFrame = base * CFrame.new(0, size.Y / 2 - 0.4, 0) * CFrame.Angles(0, math.random() * math.pi * 2, math.rad(math.random(-8, 8)))
+	local isPlainRock = ore.id == "stone"
+	local rock = newPart(model, size, rockCFrame, isPlainRock and ore.color or ROCK_COLOR, Enum.Material.Slate)
+	rock.Name = "Rock"
+	-- Mniejsza skała obok, żeby bryła była mniej regularna.
+	newPart(model, size * 0.6, rockCFrame * CFrame.new(size.X * 0.3, -size.Y * 0.15, -size.Z * 0.25) * CFrame.Angles(0.4, 0.7, 0.2), rock.Color, Enum.Material.Slate)
+
+	if not isPlainRock then
+		local glows = ore.material == Enum.Material.Glass
+		for _ = 1, math.random(4, 6) do
+			-- Punkt na powierzchni skały: losowy kierunek, wypchnięty do krawędzi.
+			local dir = Vector3.new(math.random() - 0.5, math.random() * 0.8, math.random() - 0.5).Unit
+			local offset = dir * (size / 2) * 0.95
+			local crystalSize = Vector3.new(math.random(6, 14) / 10, math.random(10, 22) / 10, math.random(6, 14) / 10)
+			local crystal = newPart(
+				model,
+				crystalSize,
+				rockCFrame * CFrame.new(offset) * CFrame.lookAt(Vector3.zero, dir) * CFrame.Angles(math.rad(90), 0, math.random() * 3),
+				ore.color,
+				glows and Enum.Material.Neon or ore.material
+			)
+			crystal.Name = "Ore"
+			if glows then
+				crystal.Transparency = 0.15
+			end
+		end
+		if glows or ore.id == "gold" then
+			local glow = Instance.new("PointLight")
+			glow.Color = ore.color
+			glow.Range = 10
+			glow.Brightness = 1.2
+			glow.Parent = rock
+		end
+	end
+
+	-- Odłamki przy uderzeniu (emitowane przez klienta).
+	local debris = Instance.new("ParticleEmitter")
+	debris.Name = "Debris"
+	debris.Rate = 0
+	debris.Color = ColorSequence.new(isPlainRock and ore.color or ore.color:Lerp(ROCK_COLOR, 0.3))
+	debris.Size = NumberSequence.new(0.35, 0.1)
+	debris.Lifetime = NumberRange.new(0.4, 0.8)
+	debris.Speed = NumberRange.new(10, 18)
+	debris.SpreadAngle = Vector2.new(70, 70)
+	debris.Acceleration = Vector3.new(0, -50, 0)
+	debris.EmissionDirection = Enum.NormalId.Top
+	debris.Parent = rock
+
+	local gui = Instance.new("BillboardGui")
+	gui.Name = "Info"
+	gui.Size = UDim2.fromOffset(110, 34)
+	gui.StudsOffset = Vector3.new(0, size.Y / 2 + 1.5, 0)
+	gui.MaxDistance = 30
+	local label = Instance.new("TextLabel")
+	label.Name = "Label"
+	label.Size = UDim2.fromScale(1, 1)
+	label.BackgroundTransparency = 1
+	label.TextScaled = true
+	label.Font = Enum.Font.GothamBold
+	label.TextColor3 = ore.color:Lerp(Color3.new(1, 1, 1), 0.5)
+	label.TextStrokeTransparency = 0.2
+	label.Text = string.format("%s (%d)", ore.name, ore.hp)
+	label.Parent = gui
+	gui.Parent = rock
+
+	model.PrimaryPart = rock
+	model:SetAttribute("OreId", ore.id)
+	model:SetAttribute("HP", ore.hp)
+	model:SetAttribute("Tier", ore.tier)
+	return model
+end
 
 local function spawnOre(player: Player, state, index: number)
 	local data = PlayerData.Get(player)
@@ -50,42 +142,10 @@ local function spawnOre(player: Player, state, index: number)
 		return
 	end
 	local ore = pickOre(data.MineLevel)
-
-	local block = Instance.new("Part")
-	block.Name = ore.id
-	block.Anchored = true
-	block.Size = Vector3.new(5, 5, 5)
-	block.CFrame = state.plot.minePositions[index]
-	block.Color = ore.color
-	block.Material = ore.material
-	block:SetAttribute("OreId", ore.id)
-	block:SetAttribute("HP", ore.hp)
-
-	local gui = Instance.new("BillboardGui")
-	gui.Size = UDim2.fromOffset(110, 34)
-	gui.StudsOffset = Vector3.new(0, 4, 0)
-	gui.MaxDistance = 35
-	local label = Instance.new("TextLabel")
-	label.Name = "Label"
-	label.Size = UDim2.fromScale(1, 1)
-	label.BackgroundTransparency = 1
-	label.TextScaled = true
-	label.Font = Enum.Font.GothamBold
-	label.TextColor3 = Color3.new(1, 1, 1)
-	label.TextStrokeTransparency = 0.3
-	label.Text = string.format("%s (%d)", ore.name, ore.hp)
-	label.Parent = gui
-	gui.Parent = block
-
-	local detector = Instance.new("ClickDetector")
-	detector.MaxActivationDistance = CLICK_DISTANCE
-	detector.MouseClick:Connect(function(clicker)
-		onHit(clicker, player, state, index, block, ore)
-	end)
-	detector.Parent = block
-
-	block.Parent = state.folder
-	state.slots[index] = block
+	local node = buildNode(ore, state.plot.minePositions[index])
+	node.Parent = state.folder
+	state.slots[index] = node
+	state.nodes[node] = index
 end
 
 local function fillSlots(player: Player, state)
@@ -101,52 +161,65 @@ local function fillSlots(player: Player, state)
 	end
 end
 
-onHit = function(clicker: Player, owner: Player, state, index: number, block: BasePart, ore)
-	if clicker ~= owner then
-		Remotes.notify(clicker, "To nie Twoja kopalnia!")
+local function onHit(player: Player, node)
+	local state = states[player]
+	if not state or typeof(node) ~= "Instance" then
 		return
 	end
-	if states[owner] ~= state or state.slots[index] ~= block then
+	local index = state.nodes[node]
+	if not index then
 		return
 	end
-	local data = PlayerData.Get(owner)
-	if not data then
+	local data = PlayerData.Get(player)
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not data or not root then
 		return
 	end
-	local pickaxe = Pickaxes.byId[data.EquippedPickaxe] or Pickaxes.list[1]
+	if (root.Position - node:GetPivot().Position).Magnitude > HIT_DISTANCE then
+		return
+	end
 
+	local pickaxe = Pickaxes.byId[data.EquippedPickaxe] or Pickaxes.list[1]
 	local now = os.clock()
-	if now - state.lastHit < pickaxe.cooldown then
+	-- Mały zapas na opóźnienia sieci.
+	if now - state.lastHit < pickaxe.cooldown * 0.8 then
 		return
 	end
 	state.lastHit = now
 
+	local ore = Ores.byId[node:GetAttribute("OreId")]
 	if pickaxe.tier < ore.tier then
-		Remotes.notify(owner, string.format("%s wymaga lepszego kilofa (poziom %d)!", ore.name, ore.tier))
+		Remotes.notify(player, string.format("%s wymaga lepszego kilofa (poziom %d)!", ore.name, ore.tier))
 		return
 	end
 
-	local hp = block:GetAttribute("HP") - pickaxe.damage
+	local hp = node:GetAttribute("HP") - pickaxe.damage
 	if hp > 0 then
-		block:SetAttribute("HP", hp)
-		block.BillboardGui.Label.Text = string.format("%s (%d)", ore.name, hp)
+		node:SetAttribute("HP", hp)
+		node.Rock.Info.Label.Text = string.format("%s (%d)", ore.name, hp)
 		return
 	end
 
-	-- Blok wykopany.
-	block:Destroy()
+	-- Skała rozbita.
+	state.nodes[node] = nil
 	state.slots[index] = nil
+	node:Destroy()
 	data.Ores[ore.id] = (data.Ores[ore.id] or 0) + ore.drop
-	PlayerData.MarkChanged(owner)
+	PlayerData.MarkChanged(player)
 
 	state.pending[index] = true
 	task.delay(MineLevels[data.MineLevel].respawn, function()
-		if states[owner] ~= state then
+		if states[player] ~= state then
 			return
 		end
 		state.pending[index] = nil
-		spawnOre(owner, state, index)
+		spawnOre(player, state, index)
 	end)
+end
+
+function MineService.Init()
+	Remotes.MineHit.OnServerEvent:Connect(onHit)
 end
 
 function MineService.Start(player: Player)
@@ -157,13 +230,13 @@ function MineService.Start(player: Player)
 	local folder = Instance.new("Folder")
 	folder.Name = "Ores"
 	folder.Parent = plot.model
-	local state = { plot = plot, slots = {}, pending = {}, lastHit = 0, folder = folder }
+	local state = { plot = plot, slots = {}, nodes = {}, pending = {}, lastHit = 0, folder = folder }
 	states[player] = state
 	fillSlots(player, state)
 	updateMineLabel(player)
 end
 
--- Po ulepszeniu kopalni: dokłada nowe miejsca na bloki.
+-- Po ulepszeniu kopalni: dokłada nowe miejsca na skały.
 function MineService.Refresh(player: Player)
 	local state = states[player]
 	if state then

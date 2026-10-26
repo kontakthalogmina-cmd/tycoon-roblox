@@ -8,6 +8,10 @@ local NAMES = {
 	"UpgradeMine", -- klient -> serwer: ulepsz kopalnię za $
 	"BuyPickaxe", -- klient -> serwer: kup kilof (id)
 	"EquipPickaxe", -- klient -> serwer: załóż kilof (id)
+	"MineHit", -- klient -> serwer: uderzenie kilofem w skałę (model)
+	"UpgradeLuck", -- klient -> serwer: kup kolejny poziom szczęścia
+	"BuyEggSkin", -- klient -> serwer: kup skórkę jajek (id)
+	"EquipEggSkin", -- klient -> serwer: załóż skórkę jajek (id)
 }
 
 local folder = Instance.new("Folder")

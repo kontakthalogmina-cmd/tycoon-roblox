@@ -1,4 +1,5 @@
 -- Punkt startowy serwera: podłącza serwisy i zdarzenia graczy.
+local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
 
 local Services = script.Parent.Services
@@ -8,11 +9,24 @@ local PlotService = require(Services.PlotService)
 local MineService = require(Services.MineService)
 local FactoryService = require(Services.FactoryService)
 local ShopService = require(Services.ShopService)
+local ProductionLineService = require(Services.ProductionLineService)
+local PickaxeTool = require(Services.PickaxeTool)
 local MonetizationService = require(Services.MonetizationService)
 
 local AUTOSAVE_INTERVAL = 60
 
+-- Słoneczny dzień z lekką mgiełką na horyzoncie.
+Lighting.ClockTime = 14
+Lighting.Brightness = 2.5
+Lighting.OutdoorAmbient = Color3.fromRGB(140, 140, 150)
+local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere") or Instance.new("Atmosphere")
+atmosphere.Density = 0.3
+atmosphere.Haze = 1.5
+atmosphere.Color = Color3.fromRGB(200, 220, 240)
+atmosphere.Parent = Lighting
+
 PlotService.Init()
+MineService.Init()
 MonetizationService.Init()
 
 local function setupLeaderstats(player: Player, data)
@@ -49,6 +63,8 @@ local function onPlayerAdded(player: Player)
 		return
 	end
 	MineService.Start(player)
+	ProductionLineService.Start(player)
+	PickaxeTool.Setup(player)
 	FactoryService.UpdateLabel(player)
 	PlayerData.MarkChanged(player)
 end
@@ -58,6 +74,7 @@ local function onPlayerRemoving(player: Player)
 		return
 	end
 	MineService.Stop(player)
+	ProductionLineService.Stop(player)
 	PlotService.Release(player)
 	PlayerData.Save(player)
 	PlayerData.Release(player)
@@ -73,8 +90,9 @@ Remotes.UpgradeFactory.OnServerEvent:Connect(FactoryService.TryUpgradeWithOres)
 Remotes.UpgradeMine.OnServerEvent:Connect(ShopService.UpgradeMine)
 Remotes.BuyPickaxe.OnServerEvent:Connect(ShopService.BuyPickaxe)
 Remotes.EquipPickaxe.OnServerEvent:Connect(ShopService.EquipPickaxe)
-
-FactoryService.StartLoop()
+Remotes.UpgradeLuck.OnServerEvent:Connect(ShopService.UpgradeLuck)
+Remotes.BuyEggSkin.OnServerEvent:Connect(ShopService.BuyEggSkin)
+Remotes.EquipEggSkin.OnServerEvent:Connect(ShopService.EquipEggSkin)
 
 task.spawn(function()
 	while true do

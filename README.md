@@ -4,12 +4,15 @@ Gra typu tycoon, w której celem jest zarobienie jak największej ilości pieni�
 
 ## Pętla rozgrywki
 
-1. Każdy gracz dostaje własną działkę z **fabryką** i **kopalnią**.
-2. **Fabryka** co sekundę produkuje pieniądze ($). Im wyższy poziom, tym większa produkcja.
-3. W **kopalni** klikasz bloki surowców, żeby je wykopać. Surowce trafiają do ekwipunku.
-4. **Fabrykę ulepszasz surowcami** z kopalni albo **za Robux** (Developer Product).
-5. **Pieniądze z fabryki** wydajesz na **ulepszenie kopalni** (więcej bloków, szybszy respawn, nowe surowce) i **lepsze kilofy** (kopią twardsze surowce i mocniej uderzają).
-6. Ranking w tabeli graczy: `Pieniądze` (na koncie) i `Zarobione` (łącznie).
+1. Każdy gracz dostaje własną działkę, daleko od innych, więc widzi tylko swój teren.
+2. Z **fabryki** wychodzi **linia produkcyjna**: co 2 sekundy taśmą jedzie jajko do skupu i zamienia się w $.
+3. Jajka mają **rzadkości** (Zwykłe, Niezwykłe, Rzadkie, Epickie, Legendarne, Mityczne) z mnożnikiem wartości od x1 do x200.
+4. **Szczęście** (kupowane za $) zwiększa szansę na lepsze jajka.
+5. **Skórki jajek** (kupowane za $) zmieniają wygląd jajek i podnoszą ich wartość.
+6. **Kopalnia** jest wkopana pod ziemię: schodzisz rampą i rozbijasz skały z żyłami rudy **kilofem** trzymanym w ręce (klik = zamach).
+7. **Fabrykę ulepszasz surowcami** z kopalni albo **za Robux**. Wyższy poziom fabryki = droższe jajka.
+8. Za $ ulepszasz **kopalnię** (więcej skał, nowe rudy) i kupujesz **lepsze kilofy** (twardsze rudy, mocniejsze uderzenia).
+9. Ranking w tabeli graczy: `Pieniądze` i `Zarobione`.
 
 ## Struktura projektu (Rojo)
 
@@ -21,21 +24,30 @@ src/shared/                  -> ReplicatedStorage.Shared
   Config/MineLevels.lua      poziomy kopalni: cena, liczba bloków, respawn
   Config/FactoryLevels.lua   poziomy fabryki: dochód/s, koszt w surowcach
   Config/Products.lua        ID Developer Products (Robux)
+  Config/EggRarities.lua     rzadkości jajek: szansa i mnożnik wartości
+  Config/EggSkins.lua        skórki jajek: cena, wygląd, premia
+  Config/LuckLevels.lua      poziomy szczęścia: mnożnik i cena
+  Config/ProductionLine.lua  tempo i prędkość taśmy
+  EggOdds.lua                losowanie rzadkości ze szczęściem
   Format.lua                 formatowanie liczb (1.2K, 3.4M)
 src/server/                  -> ServerScriptService.Server
   Main.server.lua            start serwera, gracze, autozapis
   Services/PlayerData.lua    DataStore: wczytywanie i zapis
-  Services/PlotService.lua   budowa działek i przydział graczom
-  Services/MineService.lua   bloki surowców i kopanie
+  Services/PlotService.lua   przydział działek graczom
+  Services/PlotBuilder.lua   budowa działki: teren, fabryka, taśma, kopalnia
+  Services/MineService.lua   skały z rudą i kopanie
+  Services/PickaxeTool.lua   kilof w ręce (Tool)
+  Services/ProductionLineService.lua  jajka na taśmie
   Services/FactoryService.lua  dochód i ulepszenia fabryki
-  Services/ShopService.lua   kopalnia i kilofy za $
+  Services/ShopService.lua   kopalnia, kilofy, szczęście, skórki za $
   Services/MonetizationService.lua  zakupy za Robux (ProcessReceipt)
   Services/Remotes.lua       RemoteEventy klient <-> serwer
 src/client/                  -> StarterPlayerScripts.Client
   Main.client.lua            GUI: pieniądze, surowce, panel ulepszeń
+  Mining.client.lua          zamach kilofem i trafianie w skały
 ```
 
-Mapa jest budowana skryptem (8 działek), więc nie trzeba niczego ustawiać ręcznie w Studio.
+Mapa jest budowana skryptem (8 działek, teren z Terrain), więc nie trzeba niczego ustawiać ręcznie w Studio.
 
 ## Uruchomienie
 
@@ -65,7 +77,7 @@ Jest 8 działek, więc w **Game Settings -> Places -> Max Players** ustaw maksym
 
 ## Balans
 
-Wszystkie liczby (ceny, dochody, HP surowców, koszty ulepszeń) są w `src/shared/Config/`. Żeby dodać nowy surowiec, dopisz go w `Ores.lua`, a następnie użyj jego `id` w kosztach `FactoryLevels.lua`. Nowy kilof dodajesz w `Pickaxes.lua`.
+Wszystkie liczby (ceny, dochody, HP surowców, koszty ulepszeń, szanse jajek, skórki) są w `src/shared/Config/`. Żeby dodać nowy surowiec, dopisz go w `Ores.lua`, a następnie użyj jego `id` w kosztach `FactoryLevels.lua`. Nowy kilof dodajesz w `Pickaxes.lua`.
 
 ## Bezpieczeństwo
 
@@ -75,6 +87,6 @@ Cała logika (kasa, kopanie, zakupy) liczy się na serwerze. Klient tylko wysył
 
 - Globalny ranking (OrderedDataStore) najbogatszych graczy.
 - Rebirth: reset postępu za stały mnożnik dochodu.
-- Kilof jako Tool z animacją uderzenia i dźwiękami.
+- Dźwięki kopania i taśmy (wymagają ID dźwięków z Creator Store).
 - Gamepassy (np. x2 dochód, auto-kopanie).
 - Model fabryki zmieniający wygląd wraz z poziomem.

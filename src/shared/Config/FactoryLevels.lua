@@ -1,5 +1,5 @@
--- Poziomy fabryki. Fabryka produkuje pieniądze co sekundę.
--- income : $ na sekundę na tym poziomie
+-- Poziomy fabryki. Fabryka produkuje jajka na linii produkcyjnej.
+-- income : bazowa wartość produkcji w $ na sekundę (zwykłe jajko = income * interval linii)
 -- cost   : surowce potrzebne, żeby wejść na ten poziom (id z Ores -> ilość)
 -- Każdy poziom można też kupić za Robux (Products.FactoryUpgrade).
 return {

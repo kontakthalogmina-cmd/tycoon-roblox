@@ -10,5 +10,5 @@ return {
 	{ price = 10000, slots = 20, respawn = 4.5 },
 	{ price = 50000, slots = 26, respawn = 4 },
 	{ price = 250000, slots = 32, respawn = 3.5 },
-	{ price = 1000000, slots = 36, respawn = 3 },
+	{ price = 1000000, slots = 36, respawn = 3 }, -- 36 = wszystkie miejsca w kopalni
 }

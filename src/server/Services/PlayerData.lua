@@ -42,6 +42,9 @@ local TEMPLATE = {
 	MineLevel = 1,
 	OwnedPickaxes = { wooden = true },
 	EquippedPickaxe = "wooden",
+	LuckLevel = 1,
+	OwnedEggSkins = { classic = true },
+	EquippedEggSkin = "classic",
 	ProcessedReceipts = {}, -- [purchaseId] = true
 	ReceiptOrder = {}, -- kolejność, żeby przycinać stare wpisy
 }
@@ -174,6 +177,9 @@ function PlayerData.Snapshot(data)
 		MineLevel = data.MineLevel,
 		OwnedPickaxes = data.OwnedPickaxes,
 		EquippedPickaxe = data.EquippedPickaxe,
+		LuckLevel = data.LuckLevel,
+		OwnedEggSkins = data.OwnedEggSkins,
+		EquippedEggSkin = data.EquippedEggSkin,
 	}
 end
 
