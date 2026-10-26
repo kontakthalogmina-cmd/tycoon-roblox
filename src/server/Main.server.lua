@@ -11,9 +11,11 @@ local FactoryService = require(Services.FactoryService)
 local ShopService = require(Services.ShopService)
 local ProductionLineService = require(Services.ProductionLineService)
 local PickaxeTool = require(Services.PickaxeTool)
+local RaidService = require(Services.RaidService)
 local MonetizationService = require(Services.MonetizationService)
 
 local LuckLevels = require(game:GetService("ReplicatedStorage").Shared.Config.LuckLevels)
+local Raids = require(game:GetService("ReplicatedStorage").Shared.Config.Raids)
 
 local AUTOSAVE_INTERVAL = 60
 
@@ -31,6 +33,7 @@ atmosphere.Parent = Lighting
 PlotService.Init()
 MineService.Init()
 MonetizationService.Init()
+RaidService.Init()
 
 local function setupLeaderstats(player: Player, data)
 	local leaderstats = Instance.new("Folder")
@@ -62,6 +65,7 @@ local function onPlayerAdded(player: Player)
 	end
 	-- Starsze zapisy mogły mieć więcej poziomów szczęścia niż obecnie.
 	data.LuckLevel = math.clamp(data.LuckLevel, 1, #LuckLevels)
+	data.DefenseLevel = math.clamp(data.DefenseLevel, 0, #Raids.defenseLevels)
 	setupLeaderstats(player, data)
 	if not PlotService.Assign(player) then
 		player:Kick("Brak wolnych działek na tym serwerze. Spróbuj inny serwer.")
@@ -70,6 +74,7 @@ local function onPlayerAdded(player: Player)
 	MineService.Start(player)
 	ProductionLineService.Start(player)
 	PickaxeTool.Setup(player)
+	RaidService.RefreshDefense(player)
 	FactoryService.UpdateLabel(player)
 	PlayerData.MarkChanged(player)
 end
@@ -78,6 +83,7 @@ local function onPlayerRemoving(player: Player)
 	if not PlayerData.Get(player) then
 		return
 	end
+	RaidService.PlayerLeft(player)
 	MineService.Stop(player)
 	ProductionLineService.Stop(player)
 	PlotService.Release(player)

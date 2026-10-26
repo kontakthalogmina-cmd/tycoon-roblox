@@ -45,6 +45,9 @@ local TEMPLATE = {
 	LuckLevel = 1,
 	OwnedEggSkins = { classic = true },
 	EquippedEggSkin = "classic",
+	DefenseLevel = 0,
+	RaidLog = {}, -- ostatnie napady: { kind, name, amount, levels, time }
+	ShieldUntil = 0, -- os.time(), do kiedy baza jest chroniona po napadzie
 	ProcessedReceipts = {}, -- [purchaseId] = true
 	ReceiptOrder = {}, -- kolejność, żeby przycinać stare wpisy
 }
@@ -180,6 +183,9 @@ function PlayerData.Snapshot(data)
 		LuckLevel = data.LuckLevel,
 		OwnedEggSkins = data.OwnedEggSkins,
 		EquippedEggSkin = data.EquippedEggSkin,
+		DefenseLevel = data.DefenseLevel,
+		RaidLog = data.RaidLog,
+		ShieldUntil = data.ShieldUntil,
 	}
 end
 

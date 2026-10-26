@@ -8,6 +8,7 @@ local Format = require(ReplicatedStorage.Shared.Format)
 local PlayerData = require(script.Parent.PlayerData)
 local PlotService = require(script.Parent.PlotService)
 local Remotes = require(script.Parent.Remotes)
+local MineService = require(script.Parent.MineService)
 
 local FactoryService = {}
 
@@ -30,6 +31,7 @@ end
 local function levelUp(player: Player, data)
 	data.FactoryLevel += 1
 	FactoryService.UpdateLabel(player)
+	MineService.Refresh(player)
 	PlayerData.MarkChanged(player)
 	Remotes.notify(player, string.format("Fabryka ulepszona do poziomu %d!", data.FactoryLevel))
 end

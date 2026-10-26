@@ -64,6 +64,10 @@ function PlotService.Assign(player: Player)
 	return nil
 end
 
+function PlotService.All()
+	return plots
+end
+
 function PlotService.Get(player: Player)
 	return byPlayer[player]
 end

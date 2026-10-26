@@ -274,6 +274,9 @@ local function buildTerrain(origin: CFrame)
 	local floorCFrame = CFrame.lookAt((a + b) / 2, b) * CFrame.new(0, -2.5, 0)
 	terrain:FillBlock(floorCFrame, Vector3.new(14, 2, (b - a).Magnitude + 8), Enum.Material.Ground)
 
+	-- Ścieżka od bramy napadu do skarbca.
+	terrain:FillBlock(CFrame.new(o + Vector3.new(-55, -2, 100)), Vector3.new(8, 4, 56), Enum.Material.Cobblestone)
+	terrain:FillBlock(CFrame.lookAt(o + Vector3.new(-41, -2, 53), o + Vector3.new(-50, -2, 59)), Vector3.new(6, 4, 24), Enum.Material.Cobblestone)
 	-- Ścieżki z placu startowego do fabryki i do wejścia kopalni.
 	terrain:FillBlock(CFrame.new(o + Vector3.new(-10, -2, 3)), Vector3.new(8, 4, 26), Enum.Material.Pavement)
 	terrain:FillBlock(CFrame.new(o + Vector3.new(-26, -2, -10)), Vector3.new(36, 4, 8), Enum.Material.Pavement)
@@ -451,6 +454,149 @@ local function buildShop(model: Model, origin: CFrame)
 	return prompt
 end
 
+-- Skarbiec (cel napadów) z miejscami na wieże obronne.
+local VAULT_POSITION = Vector3.new(-55, 0, 62)
+local RAID_ENTRY = Vector3.new(-55, 4, 128)
+
+local function buildVault(model: Model, origin: CFrame)
+	local folder = Instance.new("Model")
+	folder.Name = "Vault"
+	folder.Parent = model
+	local base = origin * CFrame.new(VAULT_POSITION)
+	local stone = Color3.fromRGB(150, 145, 140)
+	local gold = Color3.fromRGB(255, 200, 50)
+
+	part(folder, base * CFrame.new(0, 0.5, 0), Vector3.new(16, 1, 16), Color3.fromRGB(120, 115, 110), Enum.Material.Cobblestone)
+	part(folder, base * CFrame.new(0, 5, 0), Vector3.new(11, 8, 11), stone, Enum.Material.Cobblestone)
+	part(folder, base * CFrame.new(0, 9.4, 0), Vector3.new(12.4, 0.8, 12.4), Color3.fromRGB(90, 85, 80), Enum.Material.Slate)
+	local dome = part(folder, base * CFrame.new(0, 10, 0), Vector3.new(8, 6, 8), gold, Enum.Material.Foil)
+	dome.Shape = Enum.PartType.Ball
+	for _, x in { -5.6, 5.6 } do
+		for _, z in { -5.6, 5.6 } do
+			verticalCylinder(folder, base * CFrame.new(x, 5, z), 9, 1.6, Color3.fromRGB(200, 195, 185), Enum.Material.Marble)
+		end
+	end
+	local door = part(folder, base * CFrame.new(0, 3.5, 5.6), Vector3.new(4, 5.5, 0.4), Color3.fromRGB(60, 55, 50), Enum.Material.DiamondPlate)
+	door.Name = "VaultDoor"
+	part(folder, base * CFrame.new(0, 6.6, 5.7), Vector3.new(5, 0.6, 0.5), gold, Enum.Material.Neon)
+	local sign = part(folder, base * CFrame.new(0, 8, 5.75) * CFrame.Angles(0, math.pi, 0), Vector3.new(7, 1.4, 0.2), Color3.fromRGB(40, 30, 20), Enum.Material.Wood)
+	surfaceText(sign, Enum.NormalId.Front, "SKARBIEC", gold)
+	light(door, 14, 1.2, gold)
+
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.ActionText = "Obrabuj skarbiec"
+	prompt.ObjectText = "Skarbiec"
+	prompt.HoldDuration = 3
+	prompt.MaxActivationDistance = 10
+	prompt.RequiresLineOfSight = false
+	prompt.Enabled = false
+	prompt.Parent = door
+
+	-- Miejsca na wieże obronne dookoła skarbca.
+	local towerSpots = {}
+	for i = 0, 5 do
+		local angle = math.rad(i * 60 + 30)
+		table.insert(towerSpots, origin * CFrame.new(VAULT_POSITION + Vector3.new(math.cos(angle) * 17, 0, math.sin(angle) * 17)))
+	end
+	local towers = Instance.new("Folder")
+	towers.Name = "Towers"
+	towers.Parent = folder
+
+	-- Brama dla napastników na skraju działki.
+	local gate = origin * CFrame.new(RAID_ENTRY - Vector3.new(0, 4, 0))
+	for _, x in { -5, 5 } do
+		part(folder, gate * CFrame.new(x, 4, 0), Vector3.new(1.5, 8, 1.5), Color3.fromRGB(90, 60, 35), Enum.Material.Wood)
+	end
+	local gateBeam = part(folder, gate * CFrame.new(0, 8.4, 0), Vector3.new(11.5, 1.2, 1.5), Color3.fromRGB(90, 60, 35), Enum.Material.Wood)
+	local gateSign = part(folder, gate * CFrame.new(0, 10, 0), Vector3.new(8, 1.8, 0.3), Color3.fromRGB(120, 30, 30), Enum.Material.Wood)
+	surfaceText(gateSign, Enum.NormalId.Front, "BRAMA NAPADU", Color3.new(1, 1, 1))
+	surfaceText(gateSign, Enum.NormalId.Back, "BRAMA NAPADU", Color3.new(1, 1, 1))
+	gateBeam.Name = "RaidGate"
+
+	return {
+		vaultPrompt = prompt,
+		vaultCFrame = base,
+		towerSpots = towerSpots,
+		towerFolder = towers,
+		raidEntry = origin * CFrame.lookAt(RAID_ENTRY, VAULT_POSITION + Vector3.new(0, 4, 0)),
+	}
+end
+
+-- Ozdoby bazy: fontanna, latarnie, kwiaty i ławki.
+local function buildDecor(model: Model, origin: CFrame, rng: Random)
+	local folder = Instance.new("Model")
+	folder.Name = "Decor"
+	folder.Parent = model
+	local stone = Color3.fromRGB(200, 195, 185)
+
+	-- Fontanna
+	local f = origin * CFrame.new(16, 0, 14)
+	verticalCylinder(folder, f * CFrame.new(0, 0.2, 0), 0.4, 18, Color3.fromRGB(170, 165, 155), Enum.Material.Cobblestone)
+	verticalCylinder(folder, f * CFrame.new(0, 1, 0), 2, 11, stone, Enum.Material.Marble)
+	local water = verticalCylinder(folder, f * CFrame.new(0, 1.6, 0), 1.6, 10, Color3.fromRGB(70, 150, 220), Enum.Material.Glass)
+	water.Transparency = 0.35
+	water.CanCollide = false
+	verticalCylinder(folder, f * CFrame.new(0, 3.5, 0), 4, 1.4, stone, Enum.Material.Marble)
+	local top = verticalCylinder(folder, f * CFrame.new(0, 5.6, 0), 0.6, 4, stone, Enum.Material.Marble)
+	local spray = Instance.new("ParticleEmitter")
+	spray.Color = ColorSequence.new(Color3.fromRGB(180, 220, 255))
+	spray.Transparency = NumberSequence.new(0.3, 1)
+	spray.Size = NumberSequence.new(0.4, 0.1)
+	spray.Lifetime = NumberRange.new(0.8, 1.2)
+	spray.Rate = 60
+	spray.Speed = NumberRange.new(8, 11)
+	spray.SpreadAngle = Vector2.new(20, 20)
+	spray.Acceleration = Vector3.new(0, -30, 0)
+	spray.EmissionDirection = Enum.NormalId.Right -- walec leży na boku, Right = w górę
+	spray.Parent = top
+
+	-- Ławki dookoła fontanny
+	for i = 0, 3 do
+		local angle = math.rad(i * 90 + 45)
+		local pos = Vector3.new(16 + math.cos(angle) * 12, 0, 14 + math.sin(angle) * 12)
+		local bench = origin * CFrame.lookAt(pos, Vector3.new(16, 0, 14))
+		part(folder, bench * CFrame.new(0, 1.6, 0), Vector3.new(5, 0.4, 1.6), Color3.fromRGB(140, 95, 55), Enum.Material.WoodPlanks)
+		part(folder, bench * CFrame.new(0, 2.6, 0.75), Vector3.new(5, 1.6, 0.3), Color3.fromRGB(140, 95, 55), Enum.Material.WoodPlanks)
+		for _, x in { -2, 2 } do
+			part(folder, bench * CFrame.new(x, 0.7, 0), Vector3.new(0.4, 1.4, 1.4), Color3.fromRGB(40, 40, 45), Enum.Material.Metal)
+		end
+	end
+
+	-- Latarnie przy ścieżkach
+	for _, pos in {
+		Vector3.new(-15, 0, 0), Vector3.new(-15, 0, 16), Vector3.new(-5, 0, -6), Vector3.new(-22, 0, -15),
+		Vector3.new(-36, 0, -15), Vector3.new(4, 0, 34), Vector3.new(-40, 0, 40), Vector3.new(-50, 0, 80),
+		Vector3.new(-60, 0, 100),
+	} do
+		local base = origin * CFrame.new(pos)
+		verticalCylinder(folder, base * CFrame.new(0, 4, 0), 8, 0.5, Color3.fromRGB(35, 35, 40), Enum.Material.Metal)
+		part(folder, base * CFrame.new(0, 8.2, 0), Vector3.new(1.4, 0.3, 1.4), Color3.fromRGB(35, 35, 40), Enum.Material.Metal)
+		local lamp = part(folder, base * CFrame.new(0, 7.5, 0), Vector3.new(1, 1.2, 1), Color3.fromRGB(255, 235, 180), Enum.Material.Neon)
+		light(lamp, 18, 1.2, Color3.fromRGB(255, 220, 160))
+	end
+
+	-- Klomby z kwiatami
+	local flowerColors = {
+		Color3.fromRGB(255, 80, 120), Color3.fromRGB(255, 220, 60), Color3.fromRGB(170, 90, 255),
+		Color3.fromRGB(255, 140, 40), Color3.fromRGB(250, 250, 250),
+	}
+	for _, bed in { Vector3.new(-30, 0, -6), Vector3.new(-50, 0, -6), Vector3.new(30, 0, 8), Vector3.new(-24, 0, 50) } do
+		local b = origin * CFrame.new(bed)
+		part(folder, b * CFrame.new(0, 0.4, 0), Vector3.new(10, 0.8, 4), Color3.fromRGB(90, 60, 40), Enum.Material.Ground)
+		for _ = 1, 14 do
+			local flower = part(
+				folder,
+				b * CFrame.new(rng:NextNumber(-4.4, 4.4), 1.2, rng:NextNumber(-1.6, 1.6)),
+				Vector3.one * rng:NextNumber(0.6, 0.9),
+				flowerColors[rng:NextInteger(1, #flowerColors)],
+				Enum.Material.SmoothPlastic,
+				{ CanCollide = false }
+			)
+			flower.Shape = Enum.PartType.Ball
+		end
+	end
+end
+
 PlotBuilder.MAX_SLOTS = MAX_SLOTS
 
 function PlotBuilder.Build(index: number, origin: CFrame, parent: Instance)
@@ -465,6 +611,8 @@ function PlotBuilder.Build(index: number, origin: CFrame, parent: Instance)
 	local line = buildProductionLine(model, origin)
 	local mineLabel, minePositions = buildMine(model, origin, rng)
 	local shopPrompt = buildShop(model, origin)
+	local vault = buildVault(model, origin)
+	buildDecor(model, origin, rng)
 
 	local sign = part(model, origin * CFrame.new(-10, 3, 24), Vector3.new(10, 4, 0.6), Color3.fromRGB(60, 40, 25), Enum.Material.WoodPlanks)
 	local signLabel = billboard(sign, 4, UDim2.fromOffset(260, 50), "Wolna działka")
@@ -482,6 +630,7 @@ function PlotBuilder.Build(index: number, origin: CFrame, parent: Instance)
 		signLabel = signLabel,
 		line = line,
 		shopPrompt = shopPrompt,
+		vault = vault,
 	}
 end
 

@@ -5,6 +5,7 @@ local Config = ReplicatedStorage.Shared.Config
 local Ores = require(Config.Ores)
 local Pickaxes = require(Config.Pickaxes)
 local MineLevels = require(Config.MineLevels)
+local OreNeeds = require(ReplicatedStorage.Shared.OreNeeds)
 
 local PlayerData = require(script.Parent.PlayerData)
 local PlotService = require(script.Parent.PlotService)
@@ -18,23 +19,20 @@ local ROCK_COLOR = Color3.fromRGB(105, 100, 98)
 -- [Player] = { plot, slots = { [i] = Model }, nodes = { [Model] = i }, pending = { [i] = true }, lastHit, folder }
 local states = {}
 
-local function pickOre(mineLevel: number)
+local function pickOre(data)
+	local candidates = OreNeeds.spawnable(Ores.list, data.MineLevel, data.FactoryLevel)
 	local total = 0
-	for _, ore in Ores.list do
-		if ore.minMineLevel <= mineLevel then
-			total += ore.weight
-		end
+	for _, ore in candidates do
+		total += ore.weight
 	end
 	local roll = math.random() * total
-	for _, ore in Ores.list do
-		if ore.minMineLevel <= mineLevel then
-			roll -= ore.weight
-			if roll <= 0 then
-				return ore
-			end
+	for _, ore in candidates do
+		roll -= ore.weight
+		if roll <= 0 then
+			return ore
 		end
 	end
-	return Ores.list[1]
+	return candidates[1]
 end
 
 local function updateMineLabel(player: Player)
@@ -141,7 +139,7 @@ local function spawnOre(player: Player, state, index: number)
 	if not data or states[player] ~= state then
 		return
 	end
-	local ore = pickOre(data.MineLevel)
+	local ore = pickOre(data)
 	local node = buildNode(ore, state.plot.minePositions[index])
 	node.Parent = state.folder
 	state.slots[index] = node
@@ -237,13 +235,27 @@ function MineService.Start(player: Player)
 	updateMineLabel(player)
 end
 
--- Po ulepszeniu kopalni: dokłada nowe miejsca na skały.
+-- Po zmianie poziomu kopalni albo fabryki: usuwa skały z rudą, która nie jest już potrzebna,
+-- i dokłada nowe miejsca na skały.
 function MineService.Refresh(player: Player)
 	local state = states[player]
-	if state then
-		fillSlots(player, state)
-		updateMineLabel(player)
+	local data = PlayerData.Get(player)
+	if not state or not data then
+		return
 	end
+	local allowed = {}
+	for _, ore in OreNeeds.spawnable(Ores.list, data.MineLevel, data.FactoryLevel) do
+		allowed[ore.id] = true
+	end
+	for node, index in state.nodes do
+		if not allowed[node:GetAttribute("OreId")] then
+			state.nodes[node] = nil
+			state.slots[index] = nil
+			node:Destroy()
+		end
+	end
+	fillSlots(player, state)
+	updateMineLabel(player)
 end
 
 function MineService.Stop(player: Player)

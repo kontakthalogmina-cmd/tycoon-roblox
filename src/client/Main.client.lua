@@ -15,7 +15,9 @@ local LuckLevels = require(Config.LuckLevels)
 local EggSkins = require(Config.EggSkins)
 local EggRarities = require(Config.EggRarities)
 local LineConfig = require(Config.ProductionLine)
+local Raids = require(Config.Raids)
 local EggOdds = require(Shared.EggOdds)
+local OreNeeds = require(Shared.OreNeeds)
 local Format = require(Shared.Format)
 
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
@@ -448,6 +450,9 @@ local content = make("ScrollingFrame", {
 
 local tabs = {}
 local tabButtons = {}
+local tabCallbacks = {} -- [tabId] = funkcja wołana po otwarciu zakładki
+local renderRaids -- zdefiniowane przy zakładce Napady
+local closeShopFromTab -- zdefiniowane przy otwieraniu sklepu
 local currentTab = nil
 
 local function newPage()
@@ -472,6 +477,9 @@ local function selectTab(id: string)
 		setButtonColor(btn, tabId == id and btn:GetAttribute("Accent") or C.disabled)
 	end
 	content.CanvasPosition = Vector2.zero
+	if tabCallbacks[id] then
+		task.spawn(tabCallbacks[id])
+	end
 end
 
 local function addTab(id: string, label: string, accent: Color3, order: number)
@@ -647,7 +655,141 @@ for i, skin in EggSkins.list do
 end
 
 -- Zakładka: Robux -------------------------------------------------------
-local robuxPage = addTab("robux", "💎 Robux", C.robux, 6)
+-- Zakładka: Napady -------------------------------------------------------
+local raidPage = addTab("raids", "⚔️ Napady", C.red, 6)
+sectionTitle(raidPage, 0, "Ochrona bazy")
+local defenseCard = card(raidPage, 1, Color3.fromRGB(120, 120, 140), "🛡️")
+local setDefenseProgress = progressBar(raidPage, 2, Color3.fromRGB(150, 150, 175))
+text({
+	Parent = raidPage,
+	LayoutOrder = 3,
+	TextColor3 = C.muted,
+	TextWrapped = true,
+	AutomaticSize = Enum.AutomaticSize.Y,
+	Text = string.format(
+		"Udany napad zabiera %d%% gotówki i %d poziomy fabryki. Wieże strzelają do napastnika, a gdy stoisz przy skarbcu, nie da się go obrabować. Napady od poziomu fabryki %d.",
+		math.floor(Raids.stealPercent * 100 + 0.5),
+		Raids.levelsLost,
+		Raids.minFactoryLevel
+	),
+})
+sectionTitle(raidPage, 4, "Napadnij na bazę")
+local raidStatus = text({ Parent = raidPage, LayoutOrder = 5, TextColor3 = C.muted, Text = "" })
+local targetList = make("Frame", {
+	Parent = raidPage,
+	LayoutOrder = 6,
+	BackgroundTransparency = 1,
+	Size = UDim2.new(1, 0, 0, 0),
+	AutomaticSize = Enum.AutomaticSize.Y,
+}, {
+	make("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }),
+})
+local refreshButton = button("🔄 Odśwież listę", C.blue, UDim2.fromOffset(180, 38))
+refreshButton.LayoutOrder = 7
+refreshButton.Parent = raidPage
+sectionTitle(raidPage, 8, "Historia napadów")
+local logLabel = text({
+	Parent = raidPage,
+	LayoutOrder = 9,
+	TextWrapped = true,
+	AutomaticSize = Enum.AutomaticSize.Y,
+	TextColor3 = C.text,
+	Text = "",
+})
+
+defenseCard.button.Activated:Connect(function()
+	Remotes.BuyDefense:FireServer()
+end)
+
+local GetRaidTargets = Remotes:WaitForChild("GetRaidTargets")
+local function refreshTargets()
+	for _, child in targetList:GetChildren() do
+		if child:IsA("Frame") then
+			child:Destroy()
+		end
+	end
+	raidStatus.Text = "Ładowanie..."
+	local ok, result = pcall(function()
+		return GetRaidTargets:InvokeServer()
+	end)
+	if not ok or not result then
+		raidStatus.Text = "Nie udało się pobrać listy."
+		return
+	end
+	if result.cooldown > 0 then
+		raidStatus.Text = string.format("Następny napad możliwy za %d s.", result.cooldown)
+	elseif #result.targets == 0 then
+		raidStatus.Text = "Na serwerze nie ma innych graczy."
+	else
+		raidStatus.Text = "Wybierz bazę do napadu:"
+	end
+	for i, target in result.targets do
+		local c = card(targetList, i, target.available and C.red or C.disabled, "🏰")
+		c.title.Text = target.name
+		if target.available then
+			c.desc.Text = string.format(
+				"Fabryka poz. %d  •  Ochrona poz. %d  •  Gotówka %s",
+				target.factoryLevel,
+				target.defenseLevel,
+				Format.money(target.cash)
+			)
+			c.button.Text = "⚔️ Napadnij"
+			setButtonColor(c.button, result.cooldown > 0 and C.disabled or C.red)
+			c.button.Activated:Connect(function()
+				Remotes.StartRaid:FireServer(target.userId)
+				closeShopFromTab()
+			end)
+		else
+			c.desc.Text = "Chroniony: " .. tostring(target.reason)
+			c.button.Text = "🛡️ Chroniony"
+			setButtonColor(c.button, C.disabled)
+		end
+	end
+end
+refreshButton.Activated:Connect(refreshTargets)
+tabCallbacks.raids = refreshTargets
+
+renderRaids = function()
+	local level = state.DefenseLevel or 0
+	local current = Raids.defenseLevels[level]
+	local nextLevel = Raids.defenseLevels[level + 1]
+	setDefenseProgress(level, #Raids.defenseLevels)
+	defenseCard.title.Text = string.format("Ochrona poz. %d", level)
+	local shieldLeft = (state.ShieldUntil or 0) - math.floor(workspace:GetServerTimeNow())
+	local shieldText = shieldLeft > 0 and string.format("\nTarcza po napadzie jeszcze %d min.", math.ceil(shieldLeft / 60)) or ""
+	if nextLevel then
+		defenseCard.desc.Text = string.format(
+			"Wieże: %d → %d, rabunek skarbca: %d s → %d s%s",
+			current.towers,
+			nextLevel.towers,
+			current.holdTime,
+			nextLevel.holdTime,
+			shieldText
+		)
+		defenseCard.button.Visible = true
+		defenseCard.button.Text = Format.money(nextLevel.price)
+		setButtonColor(defenseCard.button, state.Cash >= nextLevel.price and C.green or C.disabled)
+	else
+		defenseCard.desc.Text = string.format("Wieże: %d, rabunek skarbca: %d s. Maksymalna ochrona!%s", current.towers, current.holdTime, shieldText)
+		defenseCard.button.Visible = false
+	end
+
+	local lines = {}
+	for _, entry in state.RaidLog or {} do
+		if entry.kind == "robbed" then
+			table.insert(lines, string.format('<font color="#FF7A7A">⚔️ %s obrabował Cię: -%s, -%d poz. fabryki</font>', entry.name, Format.money(entry.amount), entry.levels or 0))
+		elseif entry.kind == "defended" then
+			table.insert(lines, string.format('<font color="#7CFF9A">🛡️ Obroniłeś bazę przed %s</font>', entry.name))
+		elseif entry.kind == "raidWon" then
+			table.insert(lines, string.format('<font color="#FFD25A">💰 Obrabowałeś %s: +%s</font>', entry.name, Format.money(entry.amount)))
+		elseif entry.kind == "raidLost" then
+			table.insert(lines, string.format("❌ Nieudany napad na %s", entry.name))
+		end
+	end
+	logLabel.Text = #lines > 0 and table.concat(lines, "\n") or "Jeszcze nikt Cię nie napadł."
+end
+
+local robuxPage = addTab("robux", "💎 Robux", C.robux, 7)
 sectionTitle(robuxPage, 0, "Sklep Robux")
 local robuxFactory = card(robuxPage, 1, C.orange, "🏭")
 robuxFactory.title.Text = "Ulepszenie fabryki"
@@ -691,6 +833,7 @@ end
 local function closeShop()
 	overlay.Visible = false
 end
+closeShopFromTab = closeShop
 
 closeButton.Activated:Connect(closeShop)
 overlay.Activated:Connect(closeShop)
@@ -792,17 +935,24 @@ local function renderMine()
 	local nextLevel = MineLevels[level + 1]
 	setMineProgress(level, #MineLevels)
 	mineCard.title.Text = "Poziom " .. level
-	local unlocked, locked = {}, {}
+	local unlocked, locked, unneeded = {}, {}, {}
+	local spawnable = {}
+	for _, ore in OreNeeds.spawnable(Ores.list, level, state.FactoryLevel) do
+		spawnable[ore.id] = true
+	end
 	for _, ore in Ores.list do
 		local name = string.format('<font color="%s">%s</font>', hex(lighten(ore.color, 0.3)), ore.name)
-		if ore.minMineLevel <= level then
+		if spawnable[ore.id] then
 			table.insert(unlocked, name)
+		elseif ore.minMineLevel <= level then
+			table.insert(unneeded, ore.name)
 		else
 			table.insert(locked, string.format("%s (poz. %d)", ore.name, ore.minMineLevel))
 		end
 	end
 	mineOres.Text = "Rudy w kopalni: " .. table.concat(unlocked, ", ")
 		.. (#locked > 0 and ("\nDo odblokowania: " .. table.concat(locked, ", ")) or "")
+		.. (#unneeded > 0 and ("\nJuż niepotrzebne (nie pojawiają się): " .. table.concat(unneeded, ", ")) or "")
 	if nextLevel then
 		mineCard.desc.Text = string.format(
 			"Skał: %d → %d, odradzanie %ss → %ss",
@@ -897,7 +1047,73 @@ local function render()
 	renderPickaxes()
 	renderLuck(luck)
 	renderSkins()
+	renderRaids()
 end
+
+---------------------------------------------------------------------------
+-- Pasek trwającego napadu
+---------------------------------------------------------------------------
+
+local raidTitle = text({
+	Font = TITLE_FONT,
+	TextSize = 22,
+	TextXAlignment = Enum.TextXAlignment.Center,
+	Size = UDim2.new(1, 0, 0, 28),
+	TextStrokeTransparency = 0.5,
+})
+local raidHint = text({
+	TextSize = 15,
+	TextXAlignment = Enum.TextXAlignment.Center,
+	Position = UDim2.fromOffset(0, 28),
+	Size = UDim2.new(1, 0, 0, 20),
+})
+local defendButton = button("🛡️ Broń bazy", C.green, UDim2.fromOffset(170, 38))
+defendButton.AnchorPoint = Vector2.new(0.5, 0)
+defendButton.Position = UDim2.new(0.5, 0, 0, 54)
+local raidBanner = make("Frame", {
+	Parent = gui,
+	Visible = false,
+	AnchorPoint = Vector2.new(0.5, 0),
+	Position = UDim2.new(0.5, 0, 0, 126),
+	Size = UDim2.fromOffset(440, 100),
+	BackgroundColor3 = Color3.fromRGB(150, 25, 35),
+	BackgroundTransparency = 0.1,
+}, {
+	corner(UDim.new(0, 14)),
+	stroke(Color3.fromRGB(255, 120, 120), 2),
+	padding(8),
+	raidTitle,
+	raidHint,
+	defendButton,
+})
+defendButton.Activated:Connect(function()
+	Remotes.DefendHome:FireServer()
+end)
+
+local raidInfo = nil
+Remotes:WaitForChild("RaidState").OnClientEvent:Connect(function(info)
+	raidInfo = info
+	raidBanner.Visible = info ~= nil
+	if not info then
+		return
+	end
+	defendButton.Visible = info.role == "victim"
+	raidBanner.Size = UDim2.fromOffset(440, info.role == "victim" and 100 or 60)
+	raidHint.Text = info.role == "attacker" and "Biegnij do SKARBCA i przytrzymaj E. Uważaj na wieże!"
+		or "Stań przy skarbcu, żeby go zablokować, i bij napastnika kilofem!"
+end)
+
+task.spawn(function()
+	while true do
+		if raidInfo then
+			local left = math.max(0, raidInfo.endsAt - math.floor(workspace:GetServerTimeNow()))
+			local clock = string.format("%d:%02d", left // 60, left % 60)
+			raidTitle.Text = raidInfo.role == "attacker" and string.format("⚔️ NAPAD na bazę %s  %s", raidInfo.other, clock)
+				or string.format("⚔️ %s napada na Twoją bazę!  %s", raidInfo.other, clock)
+		end
+		task.wait(0.25)
+	end
+end)
 
 Remotes:WaitForChild("DataUpdate").OnClientEvent:Connect(function(snapshot)
 	state = snapshot

@@ -8,6 +8,7 @@ local UserInputService = game:GetService("UserInputService")
 local Pickaxes = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("Pickaxes"))
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local MineHit = Remotes:WaitForChild("MineHit")
+local PvpHit = Remotes:WaitForChild("PvpHit")
 
 local player = Players.LocalPlayer
 
@@ -75,6 +76,7 @@ local function nearestNode(position: Vector3)
 	return best
 end
 
+-- Zwraca skałę albo gracza wskazanego kursorem.
 local function aimAt(screenPosition: Vector2, character: Model)
 	local camera = workspace.CurrentCamera
 	local ray = camera:ScreenPointToRay(screenPosition.X, screenPosition.Y)
@@ -82,7 +84,12 @@ local function aimAt(screenPosition: Vector2, character: Model)
 	params.FilterType = Enum.RaycastFilterType.Exclude
 	params.FilterDescendantsInstances = { character }
 	local result = workspace:Raycast(ray.Origin, ray.Direction * 300, params)
-	return result and findOreNode(result.Instance)
+	if not result then
+		return nil, nil
+	end
+	local model = result.Instance:FindFirstAncestorOfClass("Model")
+	local targetPlayer = model and Players:GetPlayerFromCharacter(model)
+	return findOreNode(result.Instance), targetPlayer
 end
 
 -- Staw barku prawej ręki i funkcja obrotu podnoszącego rękę (R15 albo R6).
@@ -137,6 +144,13 @@ local function playSwing(character: Model, duration: number)
 	end
 end
 
+local function playSwingSafe(character: Model)
+	local ok, err = pcall(playSwing, character, math.max(equippedPickaxe.cooldown, 0.3))
+	if not ok then
+		warn("[Mining] animacja zamachu:", err)
+	end
+end
+
 local function hitEffect(node: Model)
 	local rock = node.PrimaryPart
 	local debris = rock and rock:FindFirstChild("Debris")
@@ -179,19 +193,22 @@ local function trySwing(screenPosition: Vector2)
 	if not root then
 		return
 	end
-	local node = aimAt(screenPosition, character)
+	local node, targetPlayer = aimAt(screenPosition, character)
+	if targetPlayer then
+		-- Uderzenie w gracza liczy się tylko w czasie napadu (sprawdza serwer).
+		task.spawn(playSwingSafe, character)
+		task.delay(0.12, function()
+			PvpHit:FireServer(targetPlayer)
+		end)
+		return
+	end
 	if node and (root.Position - node:GetPivot().Position).Magnitude > HIT_DISTANCE then
 		showHint("Podejdź bliżej do skały!")
 		node = nil
 	end
 	node = node or nearestNode(root.Position)
 
-	task.spawn(function()
-		local ok, err = pcall(playSwing, character, math.max(equippedPickaxe.cooldown, 0.3))
-		if not ok then
-			warn("[Mining] animacja zamachu:", err)
-		end
-	end)
+	task.spawn(playSwingSafe, character)
 	if node then
 		-- Uderzenie liczy się od razu, animacja jest tylko dla oka.
 		task.delay(0.12, function()

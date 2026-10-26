@@ -13,7 +13,10 @@ Gra typu tycoon, w której celem jest zarobienie jak największej ilości pieni�
 7. **Fabrykę ulepszasz surowcami** z kopalni albo **za Robux**. Wyższy poziom fabryki = droższe jajka.
 8. Za $ ulepszasz **kopalnię** (więcej skał, nowe rudy) i kupujesz **lepsze kilofy** (twardsze rudy, mocniejsze uderzenia).
 9. **Sklep** otwierasz przyciskiem na dole ekranu albo przy budce SKLEP na działce. Zakładki: Fabryka, Kopalnia, Kilofy, Szczęście, Skórki, Robux.
-10. Ranking w tabeli graczy: `Pieniądze` i `Zarobione`.
+10. **Napady:** od poziomu fabryki 3 możesz w zakładce Napady wybrać bazę innego gracza. Trafiasz pod jego Bramę napadu i masz 90 s, żeby dobiec do **skarbca** i przytrzymać E. Udany napad zabiera ofierze 20% gotówki i 2 poziomy fabryki, a ofiara widzi nick napastnika i dostaje 10 min tarczy.
+11. **Obrona:** za $ kupujesz poziomy ochrony (do 6 wież przy skarbcu, dłuższy rabunek). Gdy stoisz przy swoim skarbcu, nie da się go obrabować, a w czasie napadu możesz bić napastnika kilofem. Udana obrona = brak strat.
+12. Kopalnia pokazuje tylko rudy potrzebne do kolejnych ulepszeń fabryki.
+13. Ranking w tabeli graczy: `Pieniądze` i `Zarobione`.
 
 ## Struktura projektu (Rojo)
 
@@ -29,6 +32,8 @@ src/shared/                  -> ReplicatedStorage.Shared
   Config/EggSkins.lua        skórki jajek: cena, wygląd, premia
   Config/LuckLevels.lua      poziomy szczęścia: mnożnik i cena
   Config/ProductionLine.lua  tempo i prędkość taśmy
+  Config/Raids.lua           napady i poziomy ochrony bazy
+  OreNeeds.lua               które rudy są jeszcze potrzebne
   EggOdds.lua                losowanie rzadkości ze szczęściem
   Format.lua                 formatowanie liczb (1.2K, 3.4M)
 src/server/                  -> ServerScriptService.Server
@@ -40,6 +45,7 @@ src/server/                  -> ServerScriptService.Server
   Services/PickaxeTool.lua   kilof w ręce (Tool)
   Services/ProductionLineService.lua  jajka na taśmie
   Services/FactoryService.lua  dochód i ulepszenia fabryki
+  Services/RaidService.lua   napady, wieże obronne, skarbiec
   Services/ShopService.lua   kopalnia, kilofy, szczęście, skórki za $
   Services/MonetizationService.lua  zakupy za Robux (ProcessReceipt)
   Services/Remotes.lua       RemoteEventy klient <-> serwer
