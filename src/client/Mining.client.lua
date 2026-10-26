@@ -104,25 +104,37 @@ local function getShoulder(character: Model)
 	return nil, nil
 end
 
-local function playSwing(character: Model, duration: number)
-	local shoulder, rotate = getShoulder(character)
-	if not shoulder then
-		return
-	end
-	originalC0[shoulder] = originalC0[shoulder] or shoulder.C0
-	local base = originalC0[shoulder]
-	local up = TweenService:Create(shoulder, TweenInfo.new(duration * 0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-		C0 = base * rotate(math.rad(70)),
+-- Zamach w górę, uderzenie w dół i powrót dla jednej właściwości CFrame (C0 barku albo Grip kilofa).
+local function swingProperty(target: Instance, property: string, base: CFrame, upRotation: CFrame, downRotation: CFrame, duration: number)
+	local up = TweenService:Create(target, TweenInfo.new(duration * 0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		[property] = base * upRotation,
 	})
-	local down = TweenService:Create(shoulder, TweenInfo.new(duration * 0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-		C0 = base * rotate(math.rad(-40)),
+	local down = TweenService:Create(target, TweenInfo.new(duration * 0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+		[property] = base * downRotation,
 	})
-	local back = TweenService:Create(shoulder, TweenInfo.new(duration * 0.4, Enum.EasingStyle.Sine), { C0 = base })
+	local back = TweenService:Create(target, TweenInfo.new(duration * 0.4, Enum.EasingStyle.Sine), { [property] = base })
 	up:Play()
 	up.Completed:Wait()
 	down:Play()
 	down.Completed:Wait()
 	back:Play()
+end
+
+local originalGrip = setmetatable({}, { __mode = "k" }) -- [Tool] = CFrame
+
+local function playSwing(character: Model, duration: number)
+	-- Kilof w dłoni obraca się zawsze, to działa przy każdym typie postaci.
+	local tool = getPickaxeTool(character)
+	if tool then
+		originalGrip[tool] = originalGrip[tool] or tool.Grip
+		task.spawn(swingProperty, tool, "Grip", originalGrip[tool], CFrame.Angles(math.rad(-55), 0, 0), CFrame.Angles(math.rad(45), 0, 0), duration)
+	end
+	-- Ręka: tylko gdy bark jest klasycznym Motor6D (nowe stawy Roblox nie mają C0).
+	local shoulder, rotate = getShoulder(character)
+	if shoulder and shoulder:IsA("Motor6D") then
+		originalC0[shoulder] = originalC0[shoulder] or shoulder.C0
+		swingProperty(shoulder, "C0", originalC0[shoulder], rotate(math.rad(70)), rotate(math.rad(-40)), duration)
+	end
 end
 
 local function hitEffect(node: Model)
@@ -174,7 +186,12 @@ local function trySwing(screenPosition: Vector2)
 	end
 	node = node or nearestNode(root.Position)
 
-	task.spawn(playSwing, character, math.max(equippedPickaxe.cooldown, 0.3))
+	task.spawn(function()
+		local ok, err = pcall(playSwing, character, math.max(equippedPickaxe.cooldown, 0.3))
+		if not ok then
+			warn("[Mining] animacja zamachu:", err)
+		end
+	end)
 	if node then
 		-- Uderzenie liczy się od razu, animacja jest tylko dla oka.
 		task.delay(0.12, function()

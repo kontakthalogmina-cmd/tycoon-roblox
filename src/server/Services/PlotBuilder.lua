@@ -270,7 +270,8 @@ local function buildTerrain(origin: CFrame)
 		terrain:FillBall(o + p + Vector3.new(0, 6, 0), 9, Enum.Material.Air)
 	end
 	local a, b = o + TUNNEL_START, o + TUNNEL_END
-	local floorCFrame = CFrame.lookAt((a + b) / 2, b) * CFrame.new(0, -1, 0)
+	-- Podłoga trochę poniżej poziomu tunelu, żeby zaokrąglenie terenu jej nie podniosło.
+	local floorCFrame = CFrame.lookAt((a + b) / 2, b) * CFrame.new(0, -2.5, 0)
 	terrain:FillBlock(floorCFrame, Vector3.new(14, 2, (b - a).Magnitude + 8), Enum.Material.Ground)
 
 	-- Ścieżki z placu startowego do fabryki i do wejścia kopalni.

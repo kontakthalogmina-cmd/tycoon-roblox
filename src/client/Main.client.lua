@@ -111,14 +111,19 @@ local function hex(color: Color3)
 end
 
 -- Przycisk z gradientem, obrysem i powiększeniem po najechaniu.
+-- Uwaga: UIGradient barwi także tekst przycisku, dlatego gradient jest tylko
+-- jasno-szary (cieniowanie), a kolor przycisku siedzi w BackgroundColor3.
+local SHADE = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(205, 205, 205))
+
 local function button(label: string, color: Color3, size: UDim2?)
 	local btn = make("TextButton", {
 		Text = label,
 		Font = TITLE_FONT,
 		TextSize = 18,
 		TextColor3 = Color3.new(1, 1, 1),
+		TextStrokeTransparency = 0.55,
 		AutoButtonColor = false,
-		BackgroundColor3 = Color3.new(1, 1, 1),
+		BackgroundColor3 = color,
 		Size = size or UDim2.fromOffset(150, 42),
 	}, {
 		corner(UDim.new(0, 10)),
@@ -131,7 +136,7 @@ local function button(label: string, color: Color3, size: UDim2?)
 		make("UIGradient", {
 			Name = "Gradient",
 			Rotation = 90,
-			Color = ColorSequence.new(lighten(color, 0.25), color),
+			Color = SHADE,
 		}),
 		make("UIScale", { Name = "Scale" }),
 	})
@@ -152,7 +157,7 @@ local function button(label: string, color: Color3, size: UDim2?)
 end
 
 local function setButtonColor(btn: TextButton, color: Color3)
-	btn.Gradient.Color = ColorSequence.new(lighten(color, 0.25), color)
+	btn.BackgroundColor3 = color
 	btn.Stroke.Color = color:Lerp(Color3.new(0, 0, 0), 0.4)
 end
 
