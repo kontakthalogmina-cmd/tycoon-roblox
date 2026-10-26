@@ -17,6 +17,7 @@ local EggRarities = require(Config.EggRarities)
 local LineConfig = require(Config.ProductionLine)
 local Raids = require(Config.Raids)
 local Weapons = require(Config.Weapons)
+local Defenses = require(Config.Defenses)
 local EggOdds = require(Shared.EggOdds)
 local OreNeeds = require(Shared.OreNeeds)
 local Format = require(Shared.Format)
@@ -425,12 +426,17 @@ closeButton.Position = UDim2.new(1, -10, 0.5, 0)
 closeButton.ZIndex = 2
 closeButton.Parent = header
 
--- Zakładki po lewej
-local sidebar = make("Frame", {
+-- Zakładki po lewej (przewijane, gdy okno jest niskie)
+local sidebar = make("ScrollingFrame", {
 	Parent = window,
 	Position = UDim2.fromOffset(10, 66),
 	Size = UDim2.new(0, 150, 1, -76),
 	BackgroundColor3 = C.sidebar,
+	BorderSizePixel = 0,
+	CanvasSize = UDim2.new(),
+	AutomaticCanvasSize = Enum.AutomaticSize.Y,
+	ScrollBarThickness = 4,
+	ScrollBarImageColor3 = C.cardStroke,
 }, {
 	corner(UDim.new(0, 12)),
 	padding(8),
@@ -705,8 +711,45 @@ local function renderWeapons()
 	end
 end
 
-local raidPage = addTab("raids", "⚔️ Napady", C.red, 7)
-sectionTitle(raidPage, 0, "Ochrona bazy")
+-- Zakładka: Obrona działki -----------------------------------------------
+local defensePage = addTab("defense", "🛡️ Obrona", Color3.fromRGB(90, 160, 230), 7)
+sectionTitle(defensePage, 0, "Obrona działki")
+text({
+	Parent = defensePage,
+	LayoutOrder = 1,
+	TextColor3 = C.muted,
+	TextWrapped = true,
+	AutomaticSize = Enum.AutomaticSize.Y,
+	Text = "Budowle same atakują każdego obcego, który wejdzie na Twoją działkę: rabusiów, złodziei złotego jajka i napastników. Każda kolejna sztuka jest droższa.",
+})
+local defenseItemCards = {}
+for i, defense in Defenses.list do
+	local c = card(defensePage, 1 + i, Color3.fromRGB(70, 90, 130), defense.icon)
+	c.button.Activated:Connect(function()
+		Remotes.BuyDefenseItem:FireServer(defense.id)
+	end)
+	defenseItemCards[defense.id] = c
+end
+
+local function renderDefenses()
+	for _, defense in Defenses.list do
+		local c = defenseItemCards[defense.id]
+		local owned = (state.Defenses and state.Defenses[defense.id]) or 0
+		c.title.Text = string.format("%s  (%d/%d)", defense.name, owned, defense.max)
+		c.desc.Text = string.format("%s\nObrażenia %d  •  zasięg %d  •  co %.1f s", defense.description, defense.damage, defense.range, defense.cooldown)
+		if owned >= defense.max then
+			c.button.Text = "Komplet"
+			setButtonColor(c.button, C.disabled)
+		else
+			local price = Defenses.price(defense, owned)
+			c.button.Text = Format.money(price)
+			setButtonColor(c.button, state.Cash >= price and C.green or C.disabled)
+		end
+	end
+end
+
+local raidPage = addTab("raids", "⚔️ Napady", C.red, 8)
+sectionTitle(raidPage, 0, "Wzmocnienie skarbca")
 local defenseCard = card(raidPage, 1, Color3.fromRGB(120, 120, 140), "🛡️")
 local setDefenseProgress = progressBar(raidPage, 2, Color3.fromRGB(150, 150, 175))
 text({
@@ -716,7 +759,7 @@ text({
 	TextWrapped = true,
 	AutomaticSize = Enum.AutomaticSize.Y,
 	Text = string.format(
-		"Udany napad zabiera %d%% gotówki i %d poziomy fabryki. Wieże strzelają do napastnika, a gdy stoisz przy skarbcu, nie da się go obrabować. Napady od poziomu fabryki %d.",
+		"Udany napad zabiera %d%% gotówki i %d poziomy fabryki. Mocniejszy skarbiec rabuje się dłużej, a gdy stoisz przy nim, nie da się go obrabować. Miny, działa i wieże kupisz w zakładce 🛡️ Obrona. Napady od poziomu fabryki %d.",
 		math.floor(Raids.stealPercent * 100 + 0.5),
 		Raids.levelsLost,
 		Raids.minFactoryLevel
@@ -777,7 +820,7 @@ local function refreshTargets()
 		c.title.Text = target.name
 		if target.available then
 			c.desc.Text = string.format(
-				"Fabryka poz. %d  •  Ochrona poz. %d  •  Gotówka %s",
+				"Fabryka poz. %d  •  Skarbiec poz. %d  •  Gotówka %s",
 				target.factoryLevel,
 				target.defenseLevel,
 				Format.money(target.cash)
@@ -803,14 +846,12 @@ renderRaids = function()
 	local current = Raids.defenseLevels[level]
 	local nextLevel = Raids.defenseLevels[level + 1]
 	setDefenseProgress(level, #Raids.defenseLevels)
-	defenseCard.title.Text = string.format("Ochrona poz. %d", level)
+	defenseCard.title.Text = string.format("Skarbiec poz. %d", level)
 	local shieldLeft = (state.ShieldUntil or 0) - math.floor(workspace:GetServerTimeNow())
 	local shieldText = shieldLeft > 0 and string.format("\nTarcza po napadzie jeszcze %d min.", math.ceil(shieldLeft / 60)) or ""
 	if nextLevel then
 		defenseCard.desc.Text = string.format(
-			"Wieże: %d → %d, rabunek skarbca: %d s → %d s%s",
-			current.towers,
-			nextLevel.towers,
+			"Rabunek skarbca trwa %d s → %d s%s",
 			current.holdTime,
 			nextLevel.holdTime,
 			shieldText
@@ -819,7 +860,7 @@ renderRaids = function()
 		defenseCard.button.Text = Format.money(nextLevel.price)
 		setButtonColor(defenseCard.button, state.Cash >= nextLevel.price and C.green or C.disabled)
 	else
-		defenseCard.desc.Text = string.format("Wieże: %d, rabunek skarbca: %d s. Maksymalna ochrona!%s", current.towers, current.holdTime, shieldText)
+		defenseCard.desc.Text = string.format("Rabunek skarbca trwa %d s. Maksymalne wzmocnienie!%s", current.holdTime, shieldText)
 		defenseCard.button.Visible = false
 	end
 
@@ -838,7 +879,7 @@ renderRaids = function()
 	logLabel.Text = #lines > 0 and table.concat(lines, "\n") or "Jeszcze nikt Cię nie napadł."
 end
 
-local robuxPage = addTab("robux", "💎 Robux", C.robux, 8)
+local robuxPage = addTab("robux", "💎 Robux", C.robux, 9)
 sectionTitle(robuxPage, 0, "Sklep Robux")
 local robuxFactory = card(robuxPage, 1, C.orange, "🏭")
 robuxFactory.title.Text = "Ulepszenie fabryki"
@@ -1098,6 +1139,7 @@ local function render()
 	renderSkins()
 	renderRaids()
 	renderWeapons()
+	renderDefenses()
 end
 
 ---------------------------------------------------------------------------

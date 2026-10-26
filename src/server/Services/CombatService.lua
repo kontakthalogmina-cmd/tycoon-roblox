@@ -278,20 +278,46 @@ end
 -- Rzucanie jajkami
 ---------------------------------------------------------------------------
 
-local function knock(target: Player, attacker: Player, direction: Vector3)
+-- Przewraca i odpycha gracza (jajko, mina, działo...). Zwraca true, jeśli trafienie się liczyło.
+-- opts: { direction, knockback, upward, duration, damage, text, color, dropMessage }
+function CombatService.Knock(target: Player, attacker: Player?, opts)
 	local root, humanoid = aliveRoot(target)
 	if not root or inSafeZone(root.Position) then
-		return
+		return false
 	end
-	local cfg = Weapons.throw
-	local flat = (direction * Vector3.new(1, 0, 1))
+	local flat = (opts.direction or Vector3.zero) * Vector3.new(1, 0, 1)
 	flat = flat.Magnitude > 0.01 and flat.Unit or Vector3.new(0, 0, 1)
-	markHit(target, attacker)
-	humanoid:TakeDamage(cfg.damage)
-	Remotes.Knockback:FireClient(target, flat * cfg.knockback + Vector3.new(0, cfg.upward, 0), cfg.knockdown)
-	popup(root.Position + Vector3.new(0, 3, 0), "SPLAT!", Color3.fromRGB(255, 240, 200))
-	dropCarried(target, "Ktoś trafił Cię jajkiem.")
+	if attacker then
+		markHit(target, attacker)
+	end
+	if opts.damage and opts.damage > 0 then
+		humanoid:TakeDamage(opts.damage)
+	end
+	if opts.duration and opts.duration > 0 then
+		Remotes.Knockback:FireClient(target, flat * (opts.knockback or 0) + Vector3.new(0, opts.upward or 0, 0), opts.duration)
+	end
+	if opts.text then
+		popup(root.Position + Vector3.new(0, 3, 0), opts.text, opts.color or Color3.new(1, 1, 1))
+	end
+	dropCarried(target, opts.dropMessage or "Zostałeś trafiony.")
+	return true
 end
+
+local function knock(target: Player, attacker: Player, direction: Vector3)
+	local cfg = Weapons.throw
+	CombatService.Knock(target, attacker, {
+		direction = direction,
+		knockback = cfg.knockback,
+		upward = cfg.upward,
+		duration = cfg.knockdown,
+		damage = cfg.damage,
+		text = "SPLAT!",
+		color = Color3.fromRGB(255, 240, 200),
+		dropMessage = "Ktoś trafił Cię jajkiem.",
+	})
+end
+
+CombatService.InSafeZone = inSafeZone
 
 local function throwEgg(player: Player, target)
 	if typeof(target) ~= "Vector3" then

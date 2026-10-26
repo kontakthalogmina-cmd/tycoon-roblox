@@ -46,6 +46,7 @@ local TEMPLATE = {
 	OwnedEggSkins = { classic = true },
 	EquippedEggSkin = "classic",
 	DefenseLevel = 0,
+	Defenses = {}, -- [defenseId] = ile sztuk stoi na działce
 	Eggs = 0, -- waluta na bronie (🥚), zdobywana z linii produkcyjnej
 	OwnedWeapons = {},
 	EquippedWeapon = "",
@@ -187,6 +188,7 @@ function PlayerData.Snapshot(data)
 		OwnedEggSkins = data.OwnedEggSkins,
 		EquippedEggSkin = data.EquippedEggSkin,
 		DefenseLevel = data.DefenseLevel,
+		Defenses = data.Defenses,
 		Eggs = data.Eggs,
 		OwnedWeapons = data.OwnedWeapons,
 		EquippedWeapon = data.EquippedWeapon,

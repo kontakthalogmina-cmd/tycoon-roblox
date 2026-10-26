@@ -15,7 +15,8 @@ local NAMES = {
 	"OpenShop", -- serwer -> klient: otwórz sklep (budka na działce)
 	"RaidState", -- serwer -> klient: trwający napad (rola, przeciwnik, koniec) albo nil
 	"StartRaid", -- klient -> serwer: napadnij gracza (userId)
-	"BuyDefense", -- klient -> serwer: kup kolejny poziom ochrony bazy
+	"BuyDefense", -- klient -> serwer: wzmocnij skarbiec (dłuższy rabunek)
+	"BuyDefenseItem", -- klient -> serwer: postaw minę / pułapkę / działo / wieżę (id)
 	"DefendHome", -- klient -> serwer: wróć bronić bazy w czasie napadu
 	"PvpHit", -- klient -> serwer: uderzenie kilofem w gracza (Player)
 	"ThrowEgg", -- klient -> serwer: rzut jajkiem w punkt (Vector3)

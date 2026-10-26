@@ -382,7 +382,7 @@ function RaidService.BuyDefense(player: Player)
 	data.DefenseLevel += 1
 	PlayerData.MarkChanged(player)
 	RaidService.RefreshDefense(player)
-	Remotes.notify(player, string.format("🛡️ Ochrona bazy: poziom %d (%d wież)", data.DefenseLevel, nextLevel.towers))
+	Remotes.notify(player, string.format("🔒 Skarbiec wzmocniony: poziom %d (rabunek %d s)", data.DefenseLevel, nextLevel.holdTime))
 end
 
 function RaidService.DefendHome(player: Player)

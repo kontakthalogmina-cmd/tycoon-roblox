@@ -11,17 +11,16 @@ return {
 	towerRange = 32,
 	towerInterval = 2, -- co ile sekund strzela każda wieża
 
-	-- Poziomy ochrony bazy, kupowane za $.
-	-- towers   : liczba wież obronnych przy skarbcu (max 6)
-	-- damage   : obrażenia jednego strzału wieży
+	-- Poziomy wzmocnienia skarbca, kupowane za $ (osobno od min, pułapek, dział i wież, patrz Defenses.lua).
 	-- holdTime : ile sekund napastnik musi trzymać klawisz przy skarbcu
+	-- towers/damage: stare wieże przy skarbcu, wyłączone (0), obronę dają teraz budowle z Defenses.lua
 	defenseLevels = {
 		[0] = { price = 0, towers = 0, damage = 0, holdTime = 3 },
-		{ price = 5000, towers = 1, damage = 4, holdTime = 5 },
-		{ price = 25000, towers = 2, damage = 5, holdTime = 7 },
-		{ price = 100000, towers = 3, damage = 6, holdTime = 9 },
-		{ price = 400000, towers = 4, damage = 7, holdTime = 11 },
-		{ price = 1500000, towers = 5, damage = 8, holdTime = 13 },
-		{ price = 5000000, towers = 6, damage = 9, holdTime = 15 },
+		{ price = 5000, towers = 0, damage = 0, holdTime = 5 },
+		{ price = 25000, towers = 0, damage = 0, holdTime = 7 },
+		{ price = 100000, towers = 0, damage = 0, holdTime = 9 },
+		{ price = 400000, towers = 0, damage = 0, holdTime = 11 },
+		{ price = 1500000, towers = 0, damage = 0, holdTime = 13 },
+		{ price = 5000000, towers = 0, damage = 0, holdTime = 15 },
 	},
 }
