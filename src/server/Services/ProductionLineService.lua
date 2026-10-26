@@ -151,6 +151,10 @@ local function spawnEgg(player: Player, token)
 		if running[player] ~= token then
 			return
 		end
+		local data = PlayerData.Get(player)
+		if data then
+			data.Eggs += rarity.tokens
+		end
 		PlayerData.AddCash(player, value)
 		popup(line.collectorTop, "+" .. Format.money(value), rarity.color)
 		if rarityIndex >= NOTIFY_FROM_RARITY then

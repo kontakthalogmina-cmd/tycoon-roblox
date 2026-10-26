@@ -18,6 +18,10 @@ local NAMES = {
 	"BuyDefense", -- klient -> serwer: kup kolejny poziom ochrony bazy
 	"DefendHome", -- klient -> serwer: wróć bronić bazy w czasie napadu
 	"PvpHit", -- klient -> serwer: uderzenie kilofem w gracza (Player)
+	"ThrowEgg", -- klient -> serwer: rzut jajkiem w punkt (Vector3)
+	"FireWeapon", -- klient -> serwer: strzał z karabinu w punkt (Vector3)
+	"BuyWeapon", -- klient -> serwer: kup/wybierz karabin (id)
+	"Knockback", -- serwer -> klient: przewrócenie (prędkość, czas)
 }
 
 local folder = Instance.new("Folder")

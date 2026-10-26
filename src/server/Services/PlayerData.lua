@@ -46,6 +46,9 @@ local TEMPLATE = {
 	OwnedEggSkins = { classic = true },
 	EquippedEggSkin = "classic",
 	DefenseLevel = 0,
+	Eggs = 0, -- waluta na bronie (🥚), zdobywana z linii produkcyjnej
+	OwnedWeapons = {},
+	EquippedWeapon = "",
 	RaidLog = {}, -- ostatnie napady: { kind, name, amount, levels, time }
 	ShieldUntil = 0, -- os.time(), do kiedy baza jest chroniona po napadzie
 	ProcessedReceipts = {}, -- [purchaseId] = true
@@ -184,6 +187,9 @@ function PlayerData.Snapshot(data)
 		OwnedEggSkins = data.OwnedEggSkins,
 		EquippedEggSkin = data.EquippedEggSkin,
 		DefenseLevel = data.DefenseLevel,
+		Eggs = data.Eggs,
+		OwnedWeapons = data.OwnedWeapons,
+		EquippedWeapon = data.EquippedWeapon,
 		RaidLog = data.RaidLog,
 		ShieldUntil = data.ShieldUntil,
 	}

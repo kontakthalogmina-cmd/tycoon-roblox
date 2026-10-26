@@ -174,8 +174,12 @@ local function trySwing(screenPosition: Vector2)
 	if not character then
 		return
 	end
-	if not getPickaxeTool(character) then
-		-- Kilof schowany w plecaku: wyjmujemy go automatycznie.
+	local holding = character:FindFirstChildOfClass("Tool")
+	if holding and holding.Name ~= TOOL_NAME then
+		return -- w ręce jest jajko albo broń: tym zajmuje się Combat.client
+	end
+	if not holding then
+		-- Nic w ręce: wyjmujemy kilof z plecaka automatycznie.
 		local backpack = player:FindFirstChild("Backpack")
 		local tool = backpack and backpack:FindFirstChild(TOOL_NAME)
 		local humanoid = character:FindFirstChildOfClass("Humanoid")

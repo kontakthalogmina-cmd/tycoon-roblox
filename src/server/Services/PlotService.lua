@@ -1,12 +1,13 @@
--- Przydziela graczom działki. Każda działka leży daleko od innych,
--- więc gracz widzi tylko swój teren.
+-- Wspólna wyspa: działki stoją w kręgu przodem do placu na środku.
 local PlotBuilder = require(script.Parent.PlotBuilder)
 local Remotes = require(script.Parent.Remotes)
 
 local PlotService = {}
 
 local PLOT_COUNT = 8
-local PLOT_DISTANCE = 2000 -- odstęp między działkami (poza zasięgiem wzroku)
+local RING_RADIUS = 360 -- odległość działek od środka wyspy
+local ISLAND_RADIUS = 560
+PlotService.SAFE_ZONE_RADIUS = 46 -- plac na środku: tu nie da się nikogo zranić
 
 local plots = {}
 local byPlayer = {} -- [Player] = plot
@@ -16,17 +17,28 @@ function PlotService.Init()
 	folder.Name = "Plots"
 	folder.Parent = workspace
 
-	-- Mały plac startowy; gracz jest od razu przenoszony na swoją działkę.
+	workspace.FallenPartsDestroyHeight = -250
+
 	local spawn = Instance.new("SpawnLocation")
 	spawn.Anchored = true
 	spawn.Size = Vector3.new(12, 1, 12)
-	spawn.CFrame = CFrame.new(0, 0.5, 0)
+	spawn.CFrame = CFrame.new(0, 0.5, 26)
 	spawn.Neutral = true
 	spawn.Duration = 0
+	spawn.Material = Enum.Material.Marble
 	spawn.Parent = folder
 
+	local origins = {}
 	for i = 1, PLOT_COUNT do
-		local origin = CFrame.new(i * PLOT_DISTANCE, 0, 0)
+		local angle = (i - 1) * math.pi * 2 / PLOT_COUNT
+		local position = Vector3.new(math.cos(angle), 0, math.sin(angle)) * RING_RADIUS
+		-- Oś -Z działki (przód z fabryką) patrzy na środek wyspy.
+		origins[i] = CFrame.lookAt(position, Vector3.zero)
+	end
+	PlotBuilder.BuildIsland(folder, origins, ISLAND_RADIUS)
+
+	for i = 1, PLOT_COUNT do
+		local origin = origins[i]
 		local plot = PlotBuilder.Build(i, origin, folder)
 		plots[i] = plot
 		plot.shopPrompt.Triggered:Connect(function(player)

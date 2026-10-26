@@ -16,6 +16,7 @@ local EggSkins = require(Config.EggSkins)
 local EggRarities = require(Config.EggRarities)
 local LineConfig = require(Config.ProductionLine)
 local Raids = require(Config.Raids)
+local Weapons = require(Config.Weapons)
 local EggOdds = require(Shared.EggOdds)
 local OreNeeds = require(Shared.OreNeeds)
 local Format = require(Shared.Format)
@@ -286,7 +287,7 @@ make("Frame", {
 	Parent = gui,
 	AnchorPoint = Vector2.new(0.5, 0),
 	Position = UDim2.new(0.5, 0, 0, 10),
-	Size = UDim2.fromOffset(280, 62),
+	Size = UDim2.fromOffset(360, 62),
 	BackgroundColor3 = C.window,
 	BackgroundTransparency = 0.1,
 }, {
@@ -485,7 +486,7 @@ end
 local function addTab(id: string, label: string, accent: Color3, order: number)
 	local page = newPage()
 	tabs[id] = page
-	local btn = button(label, accent, UDim2.new(1, 0, 0, 44))
+	local btn = button(label, accent, UDim2.new(1, 0, 0, 40))
 	btn.TextXAlignment = Enum.TextXAlignment.Left
 	btn.TextSize = 17
 	make("UIPadding", { PaddingLeft = UDim.new(0, 10), Parent = btn })
@@ -656,7 +657,55 @@ end
 
 -- Zakładka: Robux -------------------------------------------------------
 -- Zakładka: Napady -------------------------------------------------------
-local raidPage = addTab("raids", "⚔️ Napady", C.red, 6)
+-- Zakładka: Bronie ---------------------------------------------------------
+local weaponPage = addTab("weapons", "🔫 Bronie", Color3.fromRGB(230, 90, 200), 6)
+sectionTitle(weaponPage, 0, "Bronie")
+local eggsLabel = text({ Parent = weaponPage, LayoutOrder = 1, Font = TITLE_FONT, TextSize = 18, TextColor3 = C.gold })
+local throwCard = card(weaponPage, 2, Color3.fromRGB(240, 235, 220), "🥚")
+throwCard.title.Text = "Jajko do rzucania"
+throwCard.desc.Text = "Zawsze w plecaku, bez limitu. Trafiony gracz przewraca się i odlatuje. Zrzuć go z wyspy, żeby zabrać mu złote jajko!"
+throwCard.button.Visible = false
+text({
+	Parent = weaponPage,
+	LayoutOrder = 3,
+	TextColor3 = C.muted,
+	TextWrapped = true,
+	AutomaticSize = Enum.AutomaticSize.Y,
+	Text = string.format(
+		"Brainrot karabiny kupujesz za jajka 🥚 z linii produkcyjnej (rzadsze jajka dają ich więcej). Pokonany gracz traci %d%% gotówki jako złote jajko, które trzeba donieść do swojej bazy. Na placu na środku wyspy nie da się nikogo zranić.",
+		math.floor(Weapons.goldenEgg.stealPercent * 100 + 0.5)
+	),
+})
+local rifleCards = {}
+for i, rifle in Weapons.rifles do
+	local c = card(weaponPage, 3 + i, rifle.color, "🔫")
+	c.title.Text = rifle.name
+	c.desc.Text = string.format("Obrażenia %d  •  %.1f strzału/s  •  zasięg %d", rifle.damage, 1 / rifle.fireRate, rifle.range)
+	c.button.Activated:Connect(function()
+		Remotes.BuyWeapon:FireServer(rifle.id)
+	end)
+	rifleCards[rifle.id] = c
+end
+
+local function renderWeapons()
+	local eggs = state.Eggs or 0
+	eggsLabel.Text = string.format("Masz 🥚 %s jajek", Format.number(eggs))
+	for _, rifle in Weapons.rifles do
+		local btn = rifleCards[rifle.id].button
+		if state.EquippedWeapon == rifle.id then
+			btn.Text = "W plecaku"
+			setButtonColor(btn, C.disabled)
+		elseif state.OwnedWeapons and state.OwnedWeapons[rifle.id] then
+			btn.Text = "Weź"
+			setButtonColor(btn, C.green)
+		else
+			btn.Text = "🥚 " .. Format.number(rifle.price)
+			setButtonColor(btn, eggs >= rifle.price and C.blue or C.disabled)
+		end
+	end
+end
+
+local raidPage = addTab("raids", "⚔️ Napady", C.red, 7)
 sectionTitle(raidPage, 0, "Ochrona bazy")
 local defenseCard = card(raidPage, 1, Color3.fromRGB(120, 120, 140), "🛡️")
 local setDefenseProgress = progressBar(raidPage, 2, Color3.fromRGB(150, 150, 175))
@@ -789,7 +838,7 @@ renderRaids = function()
 	logLabel.Text = #lines > 0 and table.concat(lines, "\n") or "Jeszcze nikt Cię nie napadł."
 end
 
-local robuxPage = addTab("robux", "💎 Robux", C.robux, 7)
+local robuxPage = addTab("robux", "💎 Robux", C.robux, 8)
 sectionTitle(robuxPage, 0, "Sklep Robux")
 local robuxFactory = card(robuxPage, 1, C.orange, "🏭")
 robuxFactory.title.Text = "Ulepszenie fabryki"
@@ -1033,7 +1082,7 @@ local function render()
 		TweenService:Create(cashScale, TweenInfo.new(0.2), { Scale = 1 }):Play()
 	end
 	lastCash = state.Cash
-	statsLabel.Text = string.format("🥚 jajko od %s   🍀 +%d%%", Format.money(eggValue), math.floor((luck - 1) * 100 + 0.5))
+	statsLabel.Text = string.format("🥚 %s jajek   🍀 +%d%%   jajko od %s", Format.number(state.Eggs or 0), math.floor((luck - 1) * 100 + 0.5), Format.money(eggValue))
 
 	for _, ore in Ores.list do
 		local unlocked = ore.minMineLevel <= state.MineLevel
@@ -1048,6 +1097,7 @@ local function render()
 	renderLuck(luck)
 	renderSkins()
 	renderRaids()
+	renderWeapons()
 end
 
 ---------------------------------------------------------------------------

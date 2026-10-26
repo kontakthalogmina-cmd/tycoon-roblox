@@ -4,7 +4,7 @@ Gra typu tycoon, w której celem jest zarobienie jak największej ilości pieni�
 
 ## Pętla rozgrywki
 
-1. Każdy gracz dostaje własną działkę, daleko od innych, więc widzi tylko swój teren.
+1. Wszyscy gracze (do 8) są na jednej latającej wyspie. Działki stoją w kręgu, a na środku jest plac ze złotym jajkiem (strefa bezpieczna).
 2. Z **fabryki** wychodzi **linia produkcyjna**: co 2 sekundy taśmą jedzie jajko do skupu i zamienia się w $.
 3. Jajka mają **rzadkości** (Zwykłe, Niezwykłe, Rzadkie, Epickie, Legendarne, Mityczne) z mnożnikiem wartości od x1 do x200. Każda rzadkość ma swój kolor, Legendarne mienią się tęczą, a Mityczne pulsują.
 4. **Szczęście** (kupowane za $) zwiększa szansę na lepsze jajka.
@@ -15,6 +15,7 @@ Gra typu tycoon, w której celem jest zarobienie jak największej ilości pieni�
 9. **Sklep** otwierasz przyciskiem na dole ekranu albo przy budce SKLEP na działce. Zakładki: Fabryka, Kopalnia, Kilofy, Szczęście, Skórki, Robux.
 10. **Napady:** od poziomu fabryki 3 możesz w zakładce Napady wybrać bazę innego gracza. Trafiasz pod jego Bramę napadu i masz 90 s, żeby dobiec do **skarbca** i przytrzymać E. Udany napad zabiera ofierze 20% gotówki i 2 poziomy fabryki, a ofiara widzi nick napastnika i dostaje 10 min tarczy.
 11. **Obrona:** za $ kupujesz poziomy ochrony (do 6 wież przy skarbcu, dłuższy rabunek). Gdy stoisz przy swoim skarbcu, nie da się go obrabować, a w czasie napadu możesz bić napastnika kilofem. Udana obrona = brak strat.
+12. **Walka:** jajkiem do rzucania (bez limitu) przewracasz i odpychasz innych. Za jajka 🥚 z linii produkcyjnej kupujesz brainrot karabiny. Pokonanie gracza (także zrzucenie go z wyspy) zabiera mu 10% gotówki jako wielkie złote jajko, które trzeba donieść do swojej działki. Trafienie niosącego sprawia, że je upuszcza.
 12. Kopalnia pokazuje tylko rudy potrzebne do kolejnych ulepszeń fabryki.
 13. Ranking w tabeli graczy: `Pieniądze` i `Zarobione`.
 
@@ -33,6 +34,7 @@ src/shared/                  -> ReplicatedStorage.Shared
   Config/LuckLevels.lua      poziomy szczęścia: mnożnik i cena
   Config/ProductionLine.lua  tempo i prędkość taśmy
   Config/Raids.lua           napady i poziomy ochrony bazy
+  Config/Weapons.lua         rzucanie jajkami, karabiny, złote jajko
   OreNeeds.lua               które rudy są jeszcze potrzebne
   EggOdds.lua                losowanie rzadkości ze szczęściem
   Format.lua                 formatowanie liczb (1.2K, 3.4M)
@@ -46,6 +48,8 @@ src/server/                  -> ServerScriptService.Server
   Services/ProductionLineService.lua  jajka na taśmie
   Services/FactoryService.lua  dochód i ulepszenia fabryki
   Services/RaidService.lua   napady, wieże obronne, skarbiec
+  Services/CombatService.lua rzuty jajkami, strzały, złote jajko
+  Services/WeaponTools.lua   jajko i karabin w plecaku
   Services/ShopService.lua   kopalnia, kilofy, szczęście, skórki za $
   Services/MonetizationService.lua  zakupy za Robux (ProcessReceipt)
   Services/Remotes.lua       RemoteEventy klient <-> serwer
@@ -53,6 +57,7 @@ src/client/                  -> StarterPlayerScripts.Client
   Main.client.lua            GUI: pieniądze, surowce, panel ulepszeń
   Mining.client.lua          zamach kilofem i trafianie w skały
   Effects.client.lua         tęczowe i pulsujące jajka
+  Combat.client.lua          rzucanie, strzelanie, przewracanie
 ```
 
 Mapa jest budowana skryptem (8 działek, teren z Terrain), więc nie trzeba niczego ustawiać ręcznie w Studio.
@@ -90,6 +95,11 @@ Wszystkie liczby (ceny, dochody, HP surowców, koszty ulepszeń, szanse jajek, s
 ## Bezpieczeństwo
 
 Cała logika (kasa, kopanie, zakupy) liczy się na serwerze. Klient tylko wysyła prośby („ulepsz”, „kup kilof”), a serwer sprawdza, czy gracza na to stać. Zakupy za Robux są potwierdzane dopiero po zapisaniu danych, a ID transakcji są pamiętane, żeby nie przyznać nagrody dwa razy.
+
+## Plan kolejnych etapów
+
+- Etap 2: obrona jako osobny system: miny, niewidzialne pułapki, działa i wieże czarodzieja stawiane na działce.
+- Etap 3: pisklaki z jajek, obozy treningowe i wysyłanie piskląt na wojnę.
 
 ## Pomysły na dalszy rozwój
 

@@ -2,7 +2,6 @@
 -- Wszystkie pozycje są liczone względem środka działki (origin).
 local PlotBuilder = {}
 
-local PLOT_HALF = 150 -- działka ma 300x300 studs
 
 local function part(parent: Instance, cframe: CFrame, size: Vector3, color: Color3, material: Enum.Material?, props)
 	local p = Instance.new("Part")
@@ -71,44 +70,71 @@ local function surfaceText(parent: BasePart, face: Enum.NormalId, text: string, 
 	gui.Parent = parent
 end
 
-local function buildBoundary(model: Model, origin: CFrame)
-	local walls = Instance.new("Folder")
-	walls.Name = "Boundary"
-	walls.Parent = model
-	local h = 60
-	for _, data in {
-		{ Vector3.new(0, h / 2, PLOT_HALF), Vector3.new(PLOT_HALF * 2, h, 2) },
-		{ Vector3.new(0, h / 2, -PLOT_HALF), Vector3.new(PLOT_HALF * 2, h, 2) },
-		{ Vector3.new(PLOT_HALF, h / 2, 0), Vector3.new(2, h, PLOT_HALF * 2) },
-		{ Vector3.new(-PLOT_HALF, h / 2, 0), Vector3.new(2, h, PLOT_HALF * 2) },
-	} do
-		part(walls, origin * CFrame.new(data[1]), data[2], Color3.new(1, 1, 1), nil, { Transparency = 1 })
-	end
+local function tree(folder: Instance, base: CFrame, rng: Random)
+	local height = rng:NextNumber(10, 16)
+	verticalCylinder(folder, base * CFrame.new(0, height / 2, 0), height, 1.6, Color3.fromRGB(105, 70, 40), Enum.Material.Wood)
+	local crown = part(
+		folder,
+		base * CFrame.new(0, height + 2, 0),
+		Vector3.one * rng:NextNumber(8, 11),
+		Color3.fromRGB(50, rng:NextInteger(110, 150), 50),
+		Enum.Material.Grass
+	)
+	crown.Shape = Enum.PartType.Ball
 end
 
-local function buildTrees(model: Model, origin: CFrame, rng: Random)
-	local folder = Instance.new("Folder")
-	folder.Name = "Trees"
-	folder.Parent = model
-	for _ = 1, 40 do
-		-- Drzewa tylko przy krawędziach działki.
-		local x, z
-		repeat
-			x = rng:NextNumber(-PLOT_HALF + 8, PLOT_HALF - 8)
-			z = rng:NextNumber(-PLOT_HALF + 8, PLOT_HALF - 8)
-		until math.max(math.abs(x), math.abs(z)) > 100 and (Vector2.new(x, z) - Vector2.new(55, 95)).Magnitude > 55
-		local height = rng:NextNumber(10, 16)
-		local base = origin * CFrame.new(x, 0, z)
-		verticalCylinder(folder, base * CFrame.new(0, height / 2, 0), height, 1.6, Color3.fromRGB(105, 70, 40), Enum.Material.Wood)
-		local crown = part(
-			folder,
-			base * CFrame.new(0, height + 2, 0),
-			Vector3.one * rng:NextNumber(8, 11),
-			Color3.fromRGB(50, rng:NextInteger(110, 150), 50),
-			Enum.Material.Grass
-		)
-		crown.Shape = Enum.PartType.Ball
+-- Wspólna latająca wyspa: teren, plac na środku (strefa bezpieczna) i drzewa między działkami.
+function PlotBuilder.BuildIsland(parent: Instance, plotOrigins, radius: number)
+	local terrain = workspace.Terrain
+	local folder = Instance.new("Model")
+	folder.Name = "Island"
+	folder.Parent = parent
+	local rng = Random.new(2024)
+
+	-- Wyspa wisi w powietrzu: zejście z krawędzi = upadek.
+	terrain:FillCylinder(CFrame.new(0, -22, 0), 36, radius, Enum.Material.Rock)
+	terrain:FillCylinder(CFrame.new(0, -2, 0), 4, radius, Enum.Material.Grass)
+	terrain:FillCylinder(CFrame.new(0, -55, 0), 30, radius * 0.8, Enum.Material.Rock)
+	terrain:FillCylinder(CFrame.new(0, -85, 0), 30, radius * 0.55, Enum.Material.Slate)
+	terrain:FillCylinder(CFrame.new(0, -112, 0), 24, radius * 0.3, Enum.Material.Basalt)
+	-- Nierówny brzeg.
+	for i = 0, 35 do
+		local angle = i * math.pi * 2 / 36 + rng:NextNumber(-0.05, 0.05)
+		local p = Vector3.new(math.cos(angle), 0, math.sin(angle)) * (radius - rng:NextNumber(0, 12))
+		terrain:FillBall(p + Vector3.new(0, -14, 0), rng:NextNumber(16, 26), Enum.Material.Rock)
 	end
+
+	-- Plac na środku
+	terrain:FillCylinder(CFrame.new(0, -2, 0), 4, 46, Enum.Material.Cobblestone)
+	local statueBase = verticalCylinder(folder, CFrame.new(0, 2, 0), 4, 14, Color3.fromRGB(200, 195, 185), Enum.Material.Marble)
+	statueBase.Name = "StatueBase"
+	local goldenEgg = part(folder, CFrame.new(0, 11, 0), Vector3.new(10, 13, 10), Color3.fromRGB(255, 200, 50), Enum.Material.Foil)
+	local mesh = Instance.new("SpecialMesh")
+	mesh.MeshType = Enum.MeshType.Sphere
+	mesh.Parent = goldenEgg
+	light(goldenEgg, 30, 1.5, Color3.fromRGB(255, 210, 90))
+	local sparkles = Instance.new("Sparkles")
+	sparkles.SparkleColor = Color3.fromRGB(255, 220, 100)
+	sparkles.Parent = goldenEgg
+	billboard(goldenEgg, 10, UDim2.fromOffset(300, 50), "STREFA BEZPIECZNA")
+
+	-- Ścieżki z placu do działek i drzewa między działkami.
+	for i, origin in plotOrigins do
+		local dir = (origin.Position * Vector3.new(1, 0, 1)).Unit
+		local from, to = dir * 40, origin.Position * Vector3.new(1, 0, 1) - dir * 60
+		local length = (to - from).Magnitude
+		terrain:FillBlock(CFrame.lookAt((from + to) / 2 + Vector3.new(0, -2, 0), to + Vector3.new(0, -2, 0)), Vector3.new(10, 4, length), Enum.Material.Pavement)
+		local between = math.atan2(dir.Z, dir.X) + math.pi / #plotOrigins
+		for _ = 1, 7 do
+			local r = rng:NextNumber(120, radius - 30)
+			local a = between + rng:NextNumber(-0.08, 0.08) * (600 / r)
+			tree(folder, CFrame.new(math.cos(a) * r, 0, math.sin(a) * r), rng)
+		end
+		if i % 2 == 0 then
+			tree(folder, CFrame.new(dir * 70), rng)
+		end
+	end
+	return folder
 end
 
 local function buildFactory(model: Model, origin: CFrame)
@@ -240,47 +266,52 @@ end
 
 local function buildTerrain(origin: CFrame)
 	local terrain = workspace.Terrain
-	local o = origin.Position
-	local size = PLOT_HALF * 2 + 20
-	terrain:FillBlock(CFrame.new(o + Vector3.new(0, -24, 0)), Vector3.new(size, 40, size), Enum.Material.Rock)
-	terrain:FillBlock(CFrame.new(o + Vector3.new(0, -2, 0)), Vector3.new(size, 4, size), Enum.Material.Grass)
+	-- Punkty w układzie działki -> świat (działki są obrócone przodem do środka wyspy).
+	local function W(v: Vector3): Vector3
+		return origin * v
+	end
+	local function C(cf: CFrame): CFrame
+		return origin * cf
+	end
 
 	-- Góra z kilku nachodzących na siebie brył skalnych.
-	terrain:FillBall(o + Vector3.new(50, -8, 92), 42, Enum.Material.Rock)
-	terrain:FillBall(o + Vector3.new(28, -6, 70), 26, Enum.Material.Rock)
-	terrain:FillBall(o + Vector3.new(76, -4, 106), 30, Enum.Material.Rock)
-	terrain:FillBall(o + Vector3.new(56, 12, 100), 28, Enum.Material.Slate)
-	terrain:FillBall(o + Vector3.new(40, 22, 104), 14, Enum.Material.Basalt)
+	terrain:FillBall(W(Vector3.new(50, -8, 92)), 42, Enum.Material.Rock)
+	terrain:FillBall(W(Vector3.new(28, -6, 70)), 26, Enum.Material.Rock)
+	terrain:FillBall(W(Vector3.new(76, -4, 106)), 30, Enum.Material.Rock)
+	terrain:FillBall(W(Vector3.new(56, 12, 100)), 28, Enum.Material.Slate)
+	terrain:FillBall(W(Vector3.new(40, 22, 104)), 14, Enum.Material.Basalt)
 	-- Trochę trawy i ziemi na zboczach.
-	terrain:FillBall(o + Vector3.new(84, 6, 80), 12, Enum.Material.Grass)
-	terrain:FillBall(o + Vector3.new(20, 6, 84), 12, Enum.Material.Ground)
+	terrain:FillBall(W(Vector3.new(84, 6, 80)), 12, Enum.Material.Grass)
+	terrain:FillBall(W(Vector3.new(20, 6, 84)), 12, Enum.Material.Ground)
 
 	-- Jaskinia: płaska podłoga, nierówny strop.
-	local cave = o + CAVE_CENTER
-	terrain:FillCylinder(CFrame.new(cave + Vector3.new(0, CAVE_FLOOR_Y + 11, 0)), 22, CAVE_RADIUS, Enum.Material.Air)
-	terrain:FillBall(cave + Vector3.new(0, CAVE_FLOOR_Y + 18, 0), 16, Enum.Material.Air)
-	terrain:FillBall(cave + Vector3.new(-12, CAVE_FLOOR_Y + 16, 10), 11, Enum.Material.Air)
-	terrain:FillBall(cave + Vector3.new(12, CAVE_FLOOR_Y + 16, -10), 11, Enum.Material.Air)
-	terrain:FillCylinder(CFrame.new(cave + Vector3.new(0, CAVE_FLOOR_Y - 2, 0)), 4, CAVE_RADIUS, Enum.Material.Ground)
+	local cave = CAVE_CENTER
+	terrain:FillCylinder(C(CFrame.new(cave + Vector3.new(0, CAVE_FLOOR_Y + 11, 0))), 22, CAVE_RADIUS, Enum.Material.Air)
+	terrain:FillBall(W(cave + Vector3.new(0, CAVE_FLOOR_Y + 18, 0)), 16, Enum.Material.Air)
+	terrain:FillBall(W(cave + Vector3.new(-12, CAVE_FLOOR_Y + 16, 10)), 11, Enum.Material.Air)
+	terrain:FillBall(W(cave + Vector3.new(12, CAVE_FLOOR_Y + 16, -10)), 11, Enum.Material.Air)
+	terrain:FillCylinder(C(CFrame.new(cave + Vector3.new(0, CAVE_FLOOR_Y - 2, 0))), 4, CAVE_RADIUS, Enum.Material.Ground)
 
 	-- Tunel: ciąg kul powietrza wzdłuż pochylni + utwardzona podłoga.
 	local steps = 22
 	for i = 0, steps do
 		local p = tunnelPoint(i / steps)
-		terrain:FillBall(o + p + Vector3.new(0, 6, 0), 9, Enum.Material.Air)
+		terrain:FillBall(W(p + Vector3.new(0, 6, 0)), 9, Enum.Material.Air)
 	end
-	local a, b = o + TUNNEL_START, o + TUNNEL_END
+	local a, b = TUNNEL_START, TUNNEL_END
 	-- Podłoga trochę poniżej poziomu tunelu, żeby zaokrąglenie terenu jej nie podniosło.
-	local floorCFrame = CFrame.lookAt((a + b) / 2, b) * CFrame.new(0, -2.5, 0)
+	local floorCFrame = C(CFrame.lookAt((a + b) / 2, b) * CFrame.new(0, -2.5, 0))
 	terrain:FillBlock(floorCFrame, Vector3.new(14, 2, (b - a).Magnitude + 8), Enum.Material.Ground)
 
 	-- Ścieżka od bramy napadu do skarbca.
-	terrain:FillBlock(CFrame.new(o + Vector3.new(-55, -2, 100)), Vector3.new(8, 4, 56), Enum.Material.Cobblestone)
-	terrain:FillBlock(CFrame.lookAt(o + Vector3.new(-41, -2, 53), o + Vector3.new(-50, -2, 59)), Vector3.new(6, 4, 24), Enum.Material.Cobblestone)
+	terrain:FillBlock(C(CFrame.new(-55, -2, 100)), Vector3.new(8, 4, 56), Enum.Material.Cobblestone)
+	terrain:FillBlock(C(CFrame.lookAt(Vector3.new(-41, -2, 53), Vector3.new(-50, -2, 59))), Vector3.new(6, 4, 24), Enum.Material.Cobblestone)
 	-- Ścieżki z placu startowego do fabryki i do wejścia kopalni.
-	terrain:FillBlock(CFrame.new(o + Vector3.new(-10, -2, 3)), Vector3.new(8, 4, 26), Enum.Material.Pavement)
-	terrain:FillBlock(CFrame.new(o + Vector3.new(-26, -2, -10)), Vector3.new(36, 4, 8), Enum.Material.Pavement)
-	terrain:FillBlock(CFrame.lookAt(o + Vector3.new(-2, -2, 38), o + Vector3.new(6, -2, 46)), Vector3.new(7, 4, 24), Enum.Material.Pavement)
+	terrain:FillBlock(C(CFrame.new(-10, -2, 3)), Vector3.new(8, 4, 26), Enum.Material.Pavement)
+	terrain:FillBlock(C(CFrame.new(-26, -2, -10)), Vector3.new(36, 4, 8), Enum.Material.Pavement)
+	terrain:FillBlock(C(CFrame.lookAt(Vector3.new(-2, -2, 38), Vector3.new(6, -2, 46))), Vector3.new(7, 4, 24), Enum.Material.Pavement)
+	-- Ścieżka z przodu działki w stronę placu na środku wyspy.
+	terrain:FillBlock(C(CFrame.new(-10, -2, -40)), Vector3.new(10, 4, 60), Enum.Material.Pavement)
 end
 
 local function buildMine(model: Model, origin: CFrame, rng: Random)
@@ -605,8 +636,6 @@ function PlotBuilder.Build(index: number, origin: CFrame, parent: Instance)
 	model.Name = "Plot" .. index
 
 	buildTerrain(origin)
-	buildBoundary(model, origin)
-	buildTrees(model, origin, rng)
 	local factoryLabel = buildFactory(model, origin)
 	local line = buildProductionLine(model, origin)
 	local mineLabel, minePositions = buildMine(model, origin, rng)
@@ -631,6 +660,7 @@ function PlotBuilder.Build(index: number, origin: CFrame, parent: Instance)
 		line = line,
 		shopPrompt = shopPrompt,
 		vault = vault,
+		origin = origin,
 	}
 end
 
