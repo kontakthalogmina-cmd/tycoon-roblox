@@ -229,9 +229,9 @@ end
 -- Góra z tunelem prowadzącym w dół do jaskini z rudami.
 local CAVE_CENTER = Vector3.new(50, 0, 92)
 local CAVE_FLOOR_Y = -12
-local CAVE_RADIUS = 22
+local CAVE_RADIUS = 30
 local TUNNEL_START = Vector3.new(6, 0, 46) -- wejście (na zewnątrz góry)
-local TUNNEL_END = Vector3.new(36.2, CAVE_FLOOR_Y, 77.6) -- wylot w jaskini
+local TUNNEL_END = Vector3.new(30.7, CAVE_FLOOR_Y, 71.8) -- wylot w jaskini
 local MAX_SLOTS = 36
 
 local function tunnelPoint(t: number): Vector3
@@ -257,21 +257,21 @@ local function buildTerrain(origin: CFrame)
 
 	-- Jaskinia: płaska podłoga, nierówny strop.
 	local cave = o + CAVE_CENTER
-	terrain:FillCylinder(CFrame.new(cave + Vector3.new(0, CAVE_FLOOR_Y + 8, 0)), 16, CAVE_RADIUS, Enum.Material.Air)
-	terrain:FillBall(cave + Vector3.new(0, CAVE_FLOOR_Y + 14, 0), 14, Enum.Material.Air)
-	terrain:FillBall(cave + Vector3.new(-10, CAVE_FLOOR_Y + 12, 8), 9, Enum.Material.Air)
-	terrain:FillBall(cave + Vector3.new(10, CAVE_FLOOR_Y + 12, -8), 9, Enum.Material.Air)
+	terrain:FillCylinder(CFrame.new(cave + Vector3.new(0, CAVE_FLOOR_Y + 11, 0)), 22, CAVE_RADIUS, Enum.Material.Air)
+	terrain:FillBall(cave + Vector3.new(0, CAVE_FLOOR_Y + 18, 0), 16, Enum.Material.Air)
+	terrain:FillBall(cave + Vector3.new(-12, CAVE_FLOOR_Y + 16, 10), 11, Enum.Material.Air)
+	terrain:FillBall(cave + Vector3.new(12, CAVE_FLOOR_Y + 16, -10), 11, Enum.Material.Air)
 	terrain:FillCylinder(CFrame.new(cave + Vector3.new(0, CAVE_FLOOR_Y - 2, 0)), 4, CAVE_RADIUS, Enum.Material.Ground)
 
 	-- Tunel: ciąg kul powietrza wzdłuż pochylni + utwardzona podłoga.
 	local steps = 22
 	for i = 0, steps do
 		local p = tunnelPoint(i / steps)
-		terrain:FillBall(o + p + Vector3.new(0, 3.5, 0), 5.5, Enum.Material.Air)
+		terrain:FillBall(o + p + Vector3.new(0, 6, 0), 9, Enum.Material.Air)
 	end
 	local a, b = o + TUNNEL_START, o + TUNNEL_END
 	local floorCFrame = CFrame.lookAt((a + b) / 2, b) * CFrame.new(0, -1, 0)
-	terrain:FillBlock(floorCFrame, Vector3.new(8, 2, (b - a).Magnitude + 6), Enum.Material.Ground)
+	terrain:FillBlock(floorCFrame, Vector3.new(14, 2, (b - a).Magnitude + 8), Enum.Material.Ground)
 
 	-- Ścieżki z placu startowego do fabryki i do wejścia kopalni.
 	terrain:FillBlock(CFrame.new(o + Vector3.new(-10, -2, 3)), Vector3.new(8, 4, 26), Enum.Material.Pavement)
@@ -308,11 +308,11 @@ local function buildMine(model: Model, origin: CFrame, rng: Random)
 		local p = tunnelPoint(t)
 		local frame = origin * CFrame.lookAt(p, p + forward)
 		for _, side in { -1, 1 } do
-			part(folder, frame * CFrame.new(side * 3.7, 3.6, 0), Vector3.new(0.9, 7.2, 0.9), wood, Enum.Material.Wood)
+			part(folder, frame * CFrame.new(side * 6, 5.5, 0), Vector3.new(1, 11, 1), wood, Enum.Material.Wood)
 		end
-		part(folder, frame * CFrame.new(0, 7.5, 0), Vector3.new(8.6, 0.9, 1), wood, Enum.Material.Wood)
+		part(folder, frame * CFrame.new(0, 11.4, 0), Vector3.new(13, 1, 1.1), wood, Enum.Material.Wood)
 		if i % 2 == 0 then
-			lantern((frame * CFrame.new(0, 6.6, 0)).Position - origin.Position)
+			lantern((frame * CFrame.new(0, 10.4, 0)).Position - origin.Position)
 		end
 	end
 
@@ -329,20 +329,20 @@ local function buildMine(model: Model, origin: CFrame, rng: Random)
 	-- Wejście: masywna rama z belek, tablica i kamienie.
 	local gate = origin * CFrame.lookAt(TUNNEL_START + forward * 3, TUNNEL_START + forward * 4)
 	for _, side in { -1, 1 } do
-		part(folder, gate * CFrame.new(side * 4.6, 5, 0), Vector3.new(1.6, 10, 1.6), darkWood, Enum.Material.Wood)
+		part(folder, gate * CFrame.new(side * 7.5, 7, 0), Vector3.new(1.8, 14, 1.8), darkWood, Enum.Material.Wood)
 	end
-	local beam = part(folder, gate * CFrame.new(0, 10.4, 0), Vector3.new(11.6, 1.6, 1.8), darkWood, Enum.Material.Wood)
-	local mineSign = part(folder, gate * CFrame.new(0, 12.4, -0.2), Vector3.new(9, 2.2, 0.4), Color3.fromRGB(60, 40, 25), Enum.Material.WoodPlanks)
+	local beam = part(folder, gate * CFrame.new(0, 14.6, 0), Vector3.new(17.4, 1.8, 2), darkWood, Enum.Material.Wood)
+	local mineSign = part(folder, gate * CFrame.new(0, 16.8, -0.2), Vector3.new(11, 2.6, 0.4), Color3.fromRGB(60, 40, 25), Enum.Material.WoodPlanks)
 	surfaceText(mineSign, Enum.NormalId.Back, "KOPALNIA", Color3.fromRGB(255, 220, 120))
 	surfaceText(mineSign, Enum.NormalId.Front, "KOPALNIA", Color3.fromRGB(255, 220, 120))
 	local mineLabel = billboard(beam, 6, UDim2.fromOffset(240, 50), "Kopalnia")
-	lantern((gate * CFrame.new(-4.6, 7, -1.2)).Position - origin.Position)
-	lantern((gate * CFrame.new(4.6, 7, -1.2)).Position - origin.Position)
+	lantern((gate * CFrame.new(-7.5, 9, -1.4)).Position - origin.Position)
+	lantern((gate * CFrame.new(7.5, 9, -1.4)).Position - origin.Position)
 	for _ = 1, 6 do
 		local side = rng:NextNumber() < 0.5 and -1 or 1
 		local boulder = part(
 			folder,
-			gate * CFrame.new(side * rng:NextNumber(6.5, 10), 0.6, rng:NextNumber(-5, -1)) * CFrame.Angles(rng:NextNumber(0, 3), rng:NextNumber(0, 3), 0),
+			gate * CFrame.new(side * rng:NextNumber(10, 14), 0.6, rng:NextNumber(-5, -1)) * CFrame.Angles(rng:NextNumber(0, 3), rng:NextNumber(0, 3), 0),
 			Vector3.new(rng:NextNumber(1.5, 3.5), rng:NextNumber(1.2, 2.5), rng:NextNumber(1.5, 3.5)),
 			Color3.fromRGB(110, 105, 100),
 			Enum.Material.Slate
@@ -355,8 +355,8 @@ local function buildMine(model: Model, origin: CFrame, rng: Random)
 	for i = 0, 7 do
 		local angle = tunnelAngle + math.rad(22.5) + i * math.rad(45)
 		local p = CAVE_CENTER + Vector3.new(math.cos(angle), 0, math.sin(angle)) * (CAVE_RADIUS - 1.2)
-		part(folder, origin * CFrame.new(p + Vector3.new(0, CAVE_FLOOR_Y + 4, 0)), Vector3.new(1, 8, 1), wood, Enum.Material.Wood)
-		lantern(p + Vector3.new(0, CAVE_FLOOR_Y + 8.6, 0) - Vector3.new(math.cos(angle), 0, math.sin(angle)) * 0.8)
+		part(folder, origin * CFrame.new(p + Vector3.new(0, CAVE_FLOOR_Y + 5, 0)), Vector3.new(1, 10, 1), wood, Enum.Material.Wood)
+		lantern(p + Vector3.new(0, CAVE_FLOOR_Y + 10.6, 0) - Vector3.new(math.cos(angle), 0, math.sin(angle)) * 0.8)
 	end
 	local cartPos = TUNNEL_END + forward * 1.5 + Vector3.new(0, 1.4, 0)
 	local cart = origin * CFrame.lookAt(cartPos, cartPos + forward)
@@ -392,14 +392,14 @@ local function buildMine(model: Model, origin: CFrame, rng: Random)
 		table.insert(positions, { cframe = origin * cf, dist = radius })
 	end
 	for i = 0, 4 do
-		add(i * math.pi * 2 / 5 + 0.3, 4.5)
+		add(i * math.pi * 2 / 5 + 0.3, 5.5)
 	end
 	for i = 0, 11 do
-		add(i * math.pi * 2 / 12, 11)
+		add(i * math.pi * 2 / 12, 14)
 	end
 	local wallCount = MAX_SLOTS - 17
 	for i = 0, wallCount - 1 do
-		add(tunnelAngle + math.rad(22) + i * math.rad(16.8), CAVE_RADIUS - 3.2)
+		add(tunnelAngle + math.rad(24) + i * math.rad(16.6), CAVE_RADIUS - 3.5)
 	end
 	table.sort(positions, function(x, y)
 		return x.dist < y.dist
