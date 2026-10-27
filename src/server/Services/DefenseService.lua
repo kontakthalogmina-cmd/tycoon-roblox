@@ -281,11 +281,17 @@ local function loop()
 		for owner, list in built do
 			local plot = PlotService.Get(owner)
 			if plot and #list > 0 then
-				local targets = intruders(owner, plot)
-				if #targets > 0 then
-					for _, item in list do
-						updateDefense(owner, item, targets, now)
+				-- Błąd jednej budowli nie może zatrzymać całej pętli obrony.
+				local ok, err = pcall(function()
+					local targets = intruders(owner, plot)
+					if #targets > 0 then
+						for _, item in list do
+							updateDefense(owner, item, targets, now)
+						end
 					end
+				end)
+				if not ok then
+					warn("[DefenseService]", err)
 				end
 			end
 		end

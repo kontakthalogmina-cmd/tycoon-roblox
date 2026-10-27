@@ -1,5 +1,6 @@
 -- Wczytywanie, trzymanie w pamięci i zapisywanie danych gracza (DataStore).
 local DataStoreService = game:GetService("DataStoreService")
+local RunService = game:GetService("RunService")
 
 local PlayerData = {}
 
@@ -89,6 +90,13 @@ function PlayerData.Load(player: Player)
 			task.wait(attempt)
 		end
 		if not loaded then
+			if RunService:IsStudio() then
+				-- W Studio bez dostępu do API gramy na świeżych danych, bez zapisu.
+				warn("[PlayerData] Brak dostępu do DataStore w Studio. Włącz Game Settings > Security > Enable Studio Access to API Services, żeby zapisywać postęp.")
+				data = reconcile(deepCopy(TEMPLATE))
+				profiles[player] = { data = data, canSave = false }
+				return data
+			end
 			-- Nie nadpisujemy zapisu pustymi danymi.
 			player:Kick("Nie udało się wczytać Twoich danych. Spróbuj ponownie za chwilę.")
 			return nil

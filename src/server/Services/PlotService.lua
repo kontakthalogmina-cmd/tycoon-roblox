@@ -17,8 +17,6 @@ function PlotService.Init()
 	folder.Name = "Plots"
 	folder.Parent = workspace
 
-	workspace.FallenPartsDestroyHeight = -250
-
 	local spawn = Instance.new("SpawnLocation")
 	spawn.Anchored = true
 	spawn.Size = Vector3.new(12, 1, 12)

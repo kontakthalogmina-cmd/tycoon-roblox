@@ -34,13 +34,22 @@ atmosphere.Haze = 1.5
 atmosphere.Color = Color3.fromRGB(200, 220, 240)
 atmosphere.Parent = Lighting
 
-PlotService.Init()
-MineService.Init()
-MonetizationService.Init()
-RaidService.Init()
-CombatService.Init()
-DefenseService.Init()
-ChickService.Init()
+-- Woła funkcję serwisu tak, żeby błąd jednego systemu nie wyłączał całej gry.
+local function safe(label: string, fn, ...)
+	local ok, err = pcall(fn, ...)
+	if not ok then
+		warn("[Main] Błąd w " .. label .. ":", err)
+	end
+	return ok
+end
+
+PlotService.Init() -- bez wyspy i działek gra nie ma sensu, więc tu błąd ma zatrzymać serwer
+safe("MineService.Init", MineService.Init)
+safe("MonetizationService.Init", MonetizationService.Init)
+safe("RaidService.Init", RaidService.Init)
+safe("CombatService.Init", CombatService.Init)
+safe("DefenseService.Init", DefenseService.Init)
+safe("ChickService.Init", ChickService.Init)
 
 local function setupLeaderstats(player: Player, data)
 	local leaderstats = Instance.new("Folder")
@@ -79,14 +88,14 @@ local function onPlayerAdded(player: Player)
 		player:Kick("Brak wolnych działek na tym serwerze. Spróbuj inny serwer.")
 		return
 	end
-	MineService.Start(player)
-	ProductionLineService.Start(player)
-	PickaxeTool.Setup(player)
-	CombatService.Setup(player)
-	RaidService.RefreshDefense(player)
-	DefenseService.Refresh(player)
-	ChickService.Refresh(player)
-	FactoryService.UpdateLabel(player)
+	safe("MineService.Start", MineService.Start, player)
+	safe("ProductionLineService.Start", ProductionLineService.Start, player)
+	safe("PickaxeTool.Setup", PickaxeTool.Setup, player)
+	safe("CombatService.Setup", CombatService.Setup, player)
+	safe("RaidService.RefreshDefense", RaidService.RefreshDefense, player)
+	safe("DefenseService.Refresh", DefenseService.Refresh, player)
+	safe("ChickService.Refresh", ChickService.Refresh, player)
+	safe("FactoryService.UpdateLabel", FactoryService.UpdateLabel, player)
 	PlayerData.MarkChanged(player)
 end
 
@@ -94,13 +103,13 @@ local function onPlayerRemoving(player: Player)
 	if not PlayerData.Get(player) then
 		return
 	end
-	RaidService.PlayerLeft(player)
-	CombatService.PlayerLeft(player)
-	MineService.Stop(player)
-	ProductionLineService.Stop(player)
-	DefenseService.Clear(player)
-	ChickService.PlayerLeft(player)
-	PlotService.Release(player)
+	safe("RaidService.PlayerLeft", RaidService.PlayerLeft, player)
+	safe("CombatService.PlayerLeft", CombatService.PlayerLeft, player)
+	safe("MineService.Stop", MineService.Stop, player)
+	safe("ProductionLineService.Stop", ProductionLineService.Stop, player)
+	safe("DefenseService.Clear", DefenseService.Clear, player)
+	safe("ChickService.PlayerLeft", ChickService.PlayerLeft, player)
+	safe("PlotService.Release", PlotService.Release, player)
 	PlayerData.Save(player)
 	PlayerData.Release(player)
 end

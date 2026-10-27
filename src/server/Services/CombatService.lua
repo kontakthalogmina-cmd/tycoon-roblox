@@ -240,36 +240,43 @@ local function onDied(victim: Player)
 end
 
 -- Sprawdza dostarczenie jajek na własną działkę i jajka leżące za długo na ziemi.
-local function eggLoop()
-	while true do
-		task.wait(0.25)
-		for carrier, info in carried do
-			local root = aliveRoot(carrier)
-			local plot = PlotService.Get(carrier)
-			if root and plot then
-				local localPos = plot.origin:PointToObjectSpace(root.Position)
-				if math.abs(localPos.X) < 110 and localPos.Z > -80 and localPos.Z < 150 then
-					carried[carrier] = nil
-					info.model:Destroy()
-					local _, humanoid = aliveRoot(carrier)
-					if humanoid and info.speed then
-						humanoid.WalkSpeed = info.speed
-					end
-					PlayerData.AddCash(carrier, info.value)
-					Remotes.notify(carrier, "💰 Złote jajko dostarczone! +" .. Format.money(info.value))
-					local owner = Players:GetPlayerByUserId(info.ownerId)
-					if owner then
-						Remotes.notify(owner, string.format("%s dowiózł Twoje złote jajko do swojej bazy.", carrier.DisplayName))
-					end
+local function checkEggs()
+	for carrier, info in carried do
+		local root = aliveRoot(carrier)
+		local plot = PlotService.Get(carrier)
+		if root and plot then
+			local localPos = plot.origin:PointToObjectSpace(root.Position)
+			if math.abs(localPos.X) < 110 and localPos.Z > -80 and localPos.Z < 150 then
+				carried[carrier] = nil
+				info.model:Destroy()
+				local _, humanoid = aliveRoot(carrier)
+				if humanoid and info.speed then
+					humanoid.WalkSpeed = info.speed
+				end
+				PlayerData.AddCash(carrier, info.value)
+				Remotes.notify(carrier, "💰 Złote jajko dostarczone! +" .. Format.money(info.value))
+				local owner = Players:GetPlayerByUserId(info.ownerId)
+				if owner then
+					Remotes.notify(owner, string.format("%s dowiózł Twoje złote jajko do swojej bazy.", carrier.DisplayName))
 				end
 			end
 		end
-		for egg, ground in groundEggs do
-			if os.clock() - ground.droppedAt > Weapons.goldenEgg.groundTime then
-				groundEggs[egg] = nil
-				egg:Destroy()
-				returnToOwner(ground.ownerId, ground.value)
-			end
+	end
+	for egg, ground in groundEggs do
+		if os.clock() - ground.droppedAt > Weapons.goldenEgg.groundTime then
+			groundEggs[egg] = nil
+			egg:Destroy()
+			returnToOwner(ground.ownerId, ground.value)
+		end
+	end
+end
+
+local function eggLoop()
+	while true do
+		task.wait(0.25)
+		local ok, err = pcall(checkEggs)
+		if not ok then
+			warn("[CombatService]", err)
 		end
 	end
 end

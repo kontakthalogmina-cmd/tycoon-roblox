@@ -606,9 +606,15 @@ function ChickService.Init()
 			sinceTrain += 1
 			if sinceTrain >= Chicks.trainTick then
 				sinceTrain = 0
-				trainTick()
+				local ok, err = pcall(trainTick)
+				if not ok then
+					warn("[ChickService]", err)
+				end
 			end
-			wander()
+			local ok, err = pcall(wander)
+			if not ok then
+				warn("[ChickService]", err)
+			end
 		end
 	end)
 end
