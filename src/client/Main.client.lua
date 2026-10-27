@@ -681,8 +681,8 @@ end
 -- Zakładka: Robux -------------------------------------------------------
 -- Zakładka: Napady -------------------------------------------------------
 -- Zakładka: Bronie ---------------------------------------------------------
-local weaponPage = addTab("weapons", "🔫 Bronie", Color3.fromRGB(230, 90, 200), 7)
-sectionTitle(weaponPage, 0, "Bronie")
+local weaponPage = addTab("weapons", "🔫 Broń", Color3.fromRGB(230, 90, 200), 7)
+sectionTitle(weaponPage, 0, "Broń")
 local eggsLabel = text({ Parent = weaponPage, LayoutOrder = 1, Font = TITLE_FONT, TextSize = 18, TextColor3 = C.gold })
 local throwCard = card(weaponPage, 2, Color3.fromRGB(240, 235, 220), "🥚")
 throwCard.title.Text = "Jajko do rzucania"
@@ -695,7 +695,7 @@ text({
 	TextWrapped = true,
 	AutomaticSize = Enum.AutomaticSize.Y,
 	Text = string.format(
-		"Brainrot karabiny kupujesz za jajka 🥚 z linii produkcyjnej (rzadsze jajka dają ich więcej). Pokonany gracz traci %d%% gotówki jako złote jajko, które trzeba donieść do swojej bazy. Na placu na środku wyspy nie da się nikogo zranić.",
+		"Jajko masz zawsze za darmo. Brainrot Karabin Maszynowy kupujesz raz za Robux i masz na zawsze. Pokonany gracz traci %d%% gotówki jako złote jajko, które trzeba donieść do swojej bazy. Na placu na środku wyspy nie da się nikogo zranić.",
 		math.floor(Weapons.goldenEgg.stealPercent * 100 + 0.5)
 	),
 })
@@ -705,7 +705,7 @@ for i, rifle in Weapons.rifles do
 	c.title.Text = rifle.name
 	c.desc.Text = string.format("Obrażenia %d  •  %.1f strzału/s  •  zasięg %d", rifle.damage, 1 / rifle.fireRate, rifle.range)
 	if rifle.brainrot then
-		c.desc.Text ..= "\nStrzela latającymi brainrotami z okrzykami! Kupujesz raz, masz na zawsze."
+		c.desc.Text ..= "\nKażdy strzał to latający brainrot (Tralalero, Tung Tung Sahur, Bombardiro...) z okrzykiem! Kupujesz raz, masz na zawsze."
 	end
 	c.button.Activated:Connect(function()
 		local owned = state and state.OwnedWeapons and state.OwnedWeapons[rifle.id]
@@ -731,7 +731,7 @@ end
 
 local function renderWeapons()
 	local eggs = state.Eggs or 0
-	eggsLabel.Text = string.format("Masz 🥚 %s jajek", Format.number(eggs))
+	eggsLabel.Text = string.format("Masz 🥚 %s jajek (na pisklaki)", Format.number(eggs))
 	for _, rifle in Weapons.rifles do
 		local btn = rifleCards[rifle.id].button
 		if state.EquippedWeapon == rifle.id then
@@ -1592,7 +1592,7 @@ do
 		"🥚 <b>Fabryka</b> sama robi jajka. Taśma zamienia je w $.",
 		"⛏️ <b>Kopalnia</b> (tunel w górze za bazą): klikaj w skały. Rudy ulepszają fabrykę.",
 		"🛒 <b>Sklep</b> (przycisk na dole): kilofy, ulepszenia, broń, obrona, dekoracje.",
-		"🎯 <b>Walka</b>: rzucaj jajkami i strzelaj. Pokonany gracz gubi złote jajko z częścią $.",
+		"🎯 <b>Walka</b>: rzucaj jajkami (za darmo) albo strzelaj z brainrot karabinu (Robux). Pokonany gracz gubi złote jajko z częścią $.",
 		"🐣 <b>Pisklaki</b>: wykluj je za jajka, trenuj i wysyłaj na napady (max 10% $ celu).",
 		"🛡️ <b>Obrona</b>: miny, pułapki, działa i wieże same bronią bazy.",
 		"🤝 <b>Sojusz</b>: zaproś gracza. Nie ranicie się i napadacie razem, dzieląc łup.",

@@ -36,8 +36,12 @@ function SoundFx.at(name: string, position: Vector3, jitter: number?)
 	play(Sounds.list[name], position, jitter)
 end
 
--- Losowy głos brainrota.
-function SoundFx.brainrot(position: Vector3)
+-- Okrzyk brainrota: prawdziwy z Config/Weapons (pole sound), a gdy go brak, losowy zastępczy.
+function SoundFx.brainrot(position: Vector3, brainrot)
+	if brainrot and brainrot.sound and brainrot.sound ~= "" then
+		play({ id = brainrot.sound, volume = brainrot.volume or 0.8 }, position, 0)
+		return
+	end
 	play(Sounds.brainrot[math.random(#Sounds.brainrot)], position, 0.1)
 end
 

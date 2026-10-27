@@ -10,7 +10,7 @@ Gra typu tycoon, w której celem jest zarobienie jak największej ilości pieni�
 4. **Kopalnia** jest w górze: tunelem schodzisz do jaskini i rozbijasz skały kilofem. **Fabrykę ulepszasz rudami** albo **za Robux** (fajerwerki przy awansie). Kopalnia pokazuje tylko rudy potrzebne do kolejnych ulepszeń.
 5. **Sklep:** przycisk na dole ekranu albo budka SKLEP. Panel **🎯 Co teraz?** w lewym dolnym rogu zawsze podpowiada następny krok, a **❓ Jak grać** pokazuje krótką instrukcję.
 6. **Dekoracje (🌸):** kwiaty, ławki, drzewa, flagi, fontanna i pomnik złotej kury za $. Stają w stałych miejscach, więc baza zawsze wygląda porządnie.
-7. **Walka:** jajkiem (bez limitu) przewracasz innych. Za jajka 🥚 kupujesz brainrot karabiny. **Brainrot Pistolet Maszynowy** (Game Pass za Robux) strzela latającymi brainrotami z okrzykami. Pokonany gracz gubi 10% gotówki jako złote jajko, które trzeba donieść do swojej bazy.
+7. **Walka:** jajkiem (za darmo, bez limitu) przewracasz innych. Jedyna broń palna to **Brainrot Karabin Maszynowy** (Game Pass za Robux): każdy strzał to latający, kręcący się brainrot z okrzykiem. Pokonany gracz gubi 10% gotówki jako złote jajko, które trzeba donieść do swojej bazy.
 8. **Obrona (🛡️):** miny, niewidzialne pułapki (widzi je tylko właściciel), działa i wieże czarodzieja same atakują obcych na działce.
 9. **Pisklaki (🐣):** wykluwasz je za jajka, trenujesz w obozie (XP i poziomy) i wysyłasz na napady. Napad zabiera najwyżej **10% gotówki** celu. Kilku sojuszników może zaatakować tę samą bazę (przycisk 🤝 Dołącz) i dzielą łup po równo. Bazy bronią pisklaki w domu, budowle obronne i pisklaki sojuszników obrońcy; po przegranej obrońca ma 10 min tarczy.
 10. **Sojusze (🤝):** zapraszasz gracza, a on widzi okienko **Akceptuj / Ignoruj / Blokuj** (zablokowany nie może więcej zapraszać). Sojusznicy się nie ranią, obrona ich nie atakuje, a nad głowami widać znaczek 🤝. Do 4 graczy w sojuszu.
@@ -19,11 +19,15 @@ Gra typu tycoon, w której celem jest zarobienie jak największej ilości pieni�
 
 ## Dźwięki
 
-Domyślnie gra używa dźwięków wbudowanych w Robloxa (`src/shared/Config/Sounds.lua`). Prawdziwe brainrot okrzyki (np. „Tung tung sahur”) znajdziesz w Creator Store (Toolbox → Audio): wpisz ich ID w `Sounds.brainrot` jako `rbxassetid://123`.
+Domyślnie gra używa dźwięków wbudowanych w Robloxa (`src/shared/Config/Sounds.lua`, tam też głośność).
+
+### Prawdziwe obrazki i okrzyki brainrotów
+
+W `src/shared/Config/Weapons.lua` każdy brainrot (`Weapons.brainrots`) ma pola `image` i `sound`. W Roblox Studio otwórz View → Toolbox → Marketplace, wybierz Images albo Audio, wpisz nazwę (np. „tralalero tralala”, „tung tung sahur”), kliknij wynik prawym przyciskiem → Copy Asset ID i wklej jako `"rbxassetid://ID"`. Assety z Creator Store są sprawdzone przez Robloxa, więc można ich używać w grze; plików z internetu skrypt nie wgra.
 
 ## Robux
 
-ID wpisujesz w `src/shared/Config/Products.lua`: Developer Products (ulepszenie fabryki, pakiet gotówki) i Game Pass `BrainrotSMG`. Dopóki ID = 0, w Studio pistolet maszynowy można wziąć za darmo do testów.
+ID wpisujesz w `src/shared/Config/Products.lua`: Developer Products (ulepszenie fabryki, pakiet gotówki) i Game Pass `BrainrotSMG`. Dopóki ID = 0, w Studio karabin maszynowy można wziąć za darmo do testów.
 
 ## Struktura projektu (Rojo)
 

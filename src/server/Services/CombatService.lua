@@ -105,15 +105,24 @@ local function brainrotBolt(from: Vector3, to: Vector3)
 	bolt.Transparency = 1
 	bolt.Size = Vector3.one
 	bolt.CFrame = CFrame.new(from)
+	-- Rozmiar w studs, żeby z bliska brainrot był duży, a z daleka mały.
 	local gui = Instance.new("BillboardGui")
-	gui.Size = UDim2.fromOffset(70, 60)
+	gui.Size = UDim2.fromScale(3.2, 3)
 	gui.AlwaysOnTop = true
 	gui.MaxDistance = 160
-	local icon = Instance.new("TextLabel")
+	local icon
+	if brainrot.image and brainrot.image ~= "" then
+		icon = Instance.new("ImageLabel")
+		icon.Image = brainrot.image
+		icon.ScaleType = Enum.ScaleType.Fit
+	else
+		icon = Instance.new("TextLabel")
+		icon.TextScaled = true
+		icon.Text = brainrot.text
+	end
 	icon.BackgroundTransparency = 1
 	icon.Size = UDim2.fromScale(1, 0.7)
-	icon.TextScaled = true
-	icon.Text = brainrot.text
+	icon.Rotation = math.random(-25, 25)
 	icon.Parent = gui
 	local name = Instance.new("TextLabel")
 	name.BackgroundTransparency = 1
@@ -138,7 +147,27 @@ local function brainrotBolt(from: Vector3, to: Vector3)
 	bolt.Parent = workspace
 	local time = math.clamp((to - from).Magnitude / 220, 0.05, 0.6)
 	TweenService:Create(bolt, TweenInfo.new(time, Enum.EasingStyle.Linear), { CFrame = CFrame.new(to) }):Play()
+	-- Brainrot kręci się w locie.
+	TweenService:Create(icon, TweenInfo.new(time, Enum.EasingStyle.Linear), { Rotation = icon.Rotation + (math.random() < 0.5 and -360 or 360) }):Play()
 	Debris:AddItem(bolt, time + 0.05)
+	return brainrot
+end
+
+local lastVoice = {} -- [Player] = os.clock() ostatniego okrzyku
+
+-- Błysk z lufy.
+local function muzzleFlash(muzzle: Attachment?)
+	local flash = muzzle and muzzle:FindFirstChild("Flash")
+	if flash then
+		flash:Emit(4)
+	end
+	local light = muzzle and muzzle:FindFirstChild("FlashLight")
+	if light then
+		light.Enabled = true
+		task.delay(0.05, function()
+			light.Enabled = false
+		end)
+	end
 end
 
 local function markHit(target: Player, attacker: Player)
@@ -475,9 +504,16 @@ local function fireWeapon(player: Player, target)
 	local barrel = tool:FindFirstChild("Barrel", true)
 	local muzzle = barrel and barrel:FindFirstChild("Muzzle")
 	local from = muzzle and muzzle.WorldPosition or origin
+	muzzleFlash(muzzle)
 	if rifle.brainrot then
-		brainrotBolt(from, hitPosition)
-		SoundFx.brainrot(from)
+		local brainrot = brainrotBolt(from, hitPosition)
+		local now2 = os.clock()
+		if now2 - (lastVoice[player] or 0) >= Weapons.voiceInterval then
+			lastVoice[player] = now2
+			SoundFx.brainrot(from, brainrot)
+		else
+			SoundFx.at("shot", from, 0.15)
+		end
 	else
 		tracer(from, hitPosition, rifle.color)
 		SoundFx.at("shot", from, 0.08)
@@ -551,6 +587,7 @@ function CombatService.PlayerLeft(player: Player)
 	lastAttacker[player] = nil
 	lastThrow[player] = nil
 	lastShot[player] = nil
+	lastVoice[player] = nil
 end
 
 function CombatService.Init()

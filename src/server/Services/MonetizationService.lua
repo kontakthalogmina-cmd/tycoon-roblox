@@ -74,7 +74,7 @@ local function grantSMG(player: Player, announce: boolean)
 	PlayerData.MarkChanged(player)
 	WeaponTools.Give(player)
 	if announce then
-		Remotes.notify(player, "🔫 Masz Brainrot Pistolet Maszynowy! Jest w plecaku.")
+		Remotes.notify(player, "🔫 Masz Brainrot Karabin Maszynowy! Jest w plecaku.")
 	end
 end
 

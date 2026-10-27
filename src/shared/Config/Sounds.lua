@@ -1,7 +1,6 @@
 -- Dźwięki gry. Domyślnie używamy dźwięków wbudowanych w Robloxa (rbxasset://),
 -- które działają bez wgrywania czegokolwiek.
--- Chcesz prawdziwe brainrot głosy („Tung tung sahur”, „Tralalero tralala”)? Znajdź je w
--- Creator Store (Toolbox -> Audio) albo wgraj własne i wpisz ID jako "rbxassetid://123456".
+-- Prawdziwe okrzyki brainrotów wpisujesz w Config/Weapons.lua (Weapons.brainrots).
 local Sounds = {}
 
 Sounds.list = {
@@ -12,9 +11,9 @@ Sounds.list = {
 	levelUp = { id = "rbxasset://sounds/victory.wav", volume = 0.6 },
 	throw = { id = "rbxasset://sounds/swoosh.wav", volume = 0.6 },
 	splat = { id = "rbxasset://sounds/splat.wav", volume = 0.8 },
-	shot = { id = "rbxasset://sounds/paintball.wav", volume = 0.5 },
-	mineHit = { id = "rbxasset://sounds/hit.wav", volume = 0.6 },
-	oreBreak = { id = "rbxasset://sounds/glassbreak.wav", volume = 0.5 },
+	shot = { id = "rbxasset://sounds/paintball.wav", volume = 0.3 },
+	mineHit = { id = "rbxasset://sounds/hit.wav", volume = 0.15 },
+	oreBreak = { id = "rbxasset://sounds/glassbreak.wav", volume = 0.2 },
 	cannon = { id = "rbxasset://sounds/Rocket shot.wav", volume = 0.7 },
 	magic = { id = "rbxasset://sounds/Rocket whoosh 01.wav", volume = 0.5, pitch = 1.6 },
 	chirp = { id = "rbxasset://sounds/electronicpingshort.wav", volume = 0.25, pitch = 2.2 },
@@ -24,8 +23,7 @@ Sounds.list = {
 	invite = { id = "rbxasset://sounds/electronicpingshort.wav", volume = 0.7, pitch = 0.8 },
 }
 
--- Głosy brainrotów przy strzale z pistoletu maszynowego (losowany jeden na strzał).
--- Podmień na prawdziwe nagrania z Toolboxa, np. { id = "rbxassetid://123456", volume = 0.6 }.
+-- Zastępcze głosy brainrotów, gdy w Config/Weapons.lua (Weapons.brainrots[].sound) nie ma prawdziwego okrzyku.
 Sounds.brainrot = {
 	{ id = "rbxasset://sounds/paintball.wav", volume = 0.6, pitch = 0.6 },
 	{ id = "rbxasset://sounds/snap.wav", volume = 0.6, pitch = 1.5 },

@@ -12,7 +12,7 @@ return {
 		productId = 0,
 		incomeSeconds = 600,
 	},
-	-- Game Pass (jednorazowy zakup na zawsze): Brainrot Pistolet Maszynowy.
+	-- Game Pass (jednorazowy zakup na zawsze): Brainrot Karabin Maszynowy.
 	-- Creator Hub -> Twoja gra -> Monetization -> Passes. Dopóki jest 0, w Studio broń
 	-- można wziąć za darmo do testów, a w opublikowanej grze przycisk pokazuje „Wkrótce”.
 	BrainrotSMG = {
