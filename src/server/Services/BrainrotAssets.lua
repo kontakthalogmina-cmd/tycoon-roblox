@@ -25,16 +25,40 @@ local function store(name: string, kind: string, value: string)
 	entry.Parent = folder
 end
 
+local SEARCH_TIMEOUT = 8 -- sekundy; w nieopublikowanym miejscu wyszukiwanie potrafi wisieć bez końca
+
+-- Woła fn(...) w osobnym wątku i czeka najwyżej SEARCH_TIMEOUT sekund.
+local function callWithTimeout(fn, ...)
+	local args = table.pack(...)
+	local done, ok, result = false, false, "przekroczono czas"
+	task.spawn(function()
+		ok, result = pcall(fn, table.unpack(args, 1, args.n))
+		done = true
+	end)
+	local started = os.clock()
+	while not done and os.clock() - started < SEARCH_TIMEOUT do
+		task.wait(0.2)
+	end
+	if not done then
+		return false, "przekroczono czas"
+	end
+	return ok, result
+end
+
 local function findSound(keyword: string): string?
 	local params = Instance.new("AudioSearchParams")
 	params.SearchKeyword = keyword
 	params.MaxDuration = MAX_CLIP_SECONDS
-	local ok, pages = pcall(AssetService.SearchAudio, AssetService, params)
+	local ok, pages = callWithTimeout(AssetService.SearchAudio, AssetService, params)
 	if not ok then
 		warn("[BrainrotAssets] Nie udało się wyszukać dźwięku:", keyword, pages)
 		return nil
 	end
-	for _, audio in pages:GetCurrentPage() do
+	local okPage, page = pcall(pages.GetCurrentPage, pages)
+	if not okPage then
+		return nil
+	end
+	for _, audio in page do
 		if audio.Id then
 			return "rbxassetid://" .. audio.Id
 		end
@@ -45,12 +69,16 @@ end
 local function findImage(keyword: string): string?
 	local params = CatalogSearchParams.new()
 	params.SearchKeyword = keyword
-	local ok, pages = pcall(AvatarEditorService.SearchCatalog, AvatarEditorService, params)
+	local ok, pages = callWithTimeout(AvatarEditorService.SearchCatalog, AvatarEditorService, params)
 	if not ok then
 		warn("[BrainrotAssets] Nie udało się wyszukać obrazka:", keyword, pages)
 		return nil
 	end
-	for _, item in pages:GetCurrentPage() do
+	local okPage, page = pcall(pages.GetCurrentPage, pages)
+	if not okPage then
+		return nil
+	end
+	for _, item in page do
 		if item.Id then
 			local kind = item.ItemType == "Bundle" and "BundleThumbnail" or "Asset"
 			return string.format("rbxthumb://type=%s&id=%d&w=150&h=150", kind, item.Id)
@@ -68,7 +96,13 @@ function BrainrotAssets.Get(brainrot)
 end
 
 function BrainrotAssets.Init()
+	if game.GameId == 0 then
+		-- Wyszukiwarka Robloxa działa tylko w opublikowanej grze.
+		warn("[BrainrotAssets] Gra nie jest opublikowana, więc nie szukam okrzyków i obrazków brainrotów. Karabin strzela emotkami z dźwiękiem zastępczym. Opublikuj grę (Plik → Opublikuj w Roblox) i uruchom ją ponownie.")
+		return
+	end
 	task.spawn(function()
+		print("[BrainrotAssets] Szukam okrzyków i obrazków brainrotów...")
 		for _, brainrot in Weapons.brainrots do
 			if brainrot.sound == "" then
 				local sound = findSound(brainrot.name)
