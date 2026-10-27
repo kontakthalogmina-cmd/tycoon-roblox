@@ -734,10 +734,11 @@ local function renderWeapons()
 	eggsLabel.Text = string.format("Masz 🥚 %s jajek (na pisklaki)", Format.number(eggs))
 	for _, rifle in Weapons.rifles do
 		local btn = rifleCards[rifle.id].button
-		if state.EquippedWeapon == rifle.id then
+		local owned = state.OwnedWeapons and state.OwnedWeapons[rifle.id]
+		if owned and state.EquippedWeapon == rifle.id then
 			btn.Text = "W plecaku"
 			setButtonColor(btn, C.disabled)
-		elseif state.OwnedWeapons and state.OwnedWeapons[rifle.id] then
+		elseif owned then
 			btn.Text = "Weź"
 			setButtonColor(btn, C.green)
 		elseif rifle.robux then

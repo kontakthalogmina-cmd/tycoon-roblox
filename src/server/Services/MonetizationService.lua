@@ -79,14 +79,30 @@ local function grantSMG(player: Player, announce: boolean)
 end
 
 -- Sprawdza przy wejściu, czy gracz ma już Game Pass (np. kupił go poza grą).
+-- Poza Studio odbiera też karabin wzięty za darmo podczas testów w Studio (zapisał się w danych).
 function MonetizationService.PlayerAdded(player: Player)
 	local passId = Products.BrainrotSMG.gamePassId
-	if passId == 0 then
-		return
+	local owns = false
+	if passId ~= 0 then
+		local ok, result = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, passId)
+		if not ok then
+			return -- Roblox nie odpowiedział: nic nie zmieniamy
+		end
+		owns = result
 	end
-	local ok, owns = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, passId)
-	if ok and owns then
+	if owns then
 		grantSMG(player, false)
+	elseif not RunService:IsStudio() then
+		local data = PlayerData.Get(player)
+		local weaponId = Products.BrainrotSMG.weaponId
+		if data and data.OwnedWeapons[weaponId] then
+			data.OwnedWeapons[weaponId] = nil
+			if data.EquippedWeapon == weaponId then
+				data.EquippedWeapon = ""
+			end
+			PlayerData.MarkChanged(player)
+			WeaponTools.Give(player)
+		end
 	end
 end
 
