@@ -25,7 +25,7 @@ Domyślnie gra używa dźwięków wbudowanych w Robloxa (`src/shared/Config/Soun
 
 ### Muzyka w tle
 
-Spokojna muzyka gra na co dzień, a szybka podczas napadu i bitwy pisklaków (`src/client/Music.client.lua`). W opublikowanej grze serwer sam wyszukuje utwory w Creator Store, a bez nich gra własna melodyjka z wbudowanych dźwięków. Konkretny utwór wpiszesz w `src/shared/Config/Music.lua`. Przycisk 🎵 w prawym dolnym rogu wycisza muzykę.
+Muzykę dodajesz sam: ID utworów wpisz w `src/shared/Config/Music.lua` (`calm` gra na co dzień, `raid` podczas napadu i bitwy pisklaków). Przycisk 🎵 w prawym dolnym rogu ją wycisza.
 
 ### Prawdziwe obrazki i okrzyki brainrotów
 

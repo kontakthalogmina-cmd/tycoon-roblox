@@ -7,7 +7,7 @@ Nazwy menu podaję z polskiego Studio, a w nawiasie z angielskiego. Kolejność 
 1. Otwórz `TycoonKopalnia.rbxlx` w Roblox Studio.
 2. Wybierz **Plik → Opublikuj w Roblox jako…** (*File → Publish to Roblox As…*).
 3. Kliknij **Utwórz nowe doświadczenie** (*Create new experience*), wpisz nazwę z dołu tej strony i kliknij **Utwórz**.
-4. Gra jest teraz na Robloxie, ale **prywatna**. Nikt jej nie zobaczy, dopóki nie zrobisz kroku 6.
+4. Gra jest teraz na Robloxie, ale **prywatna**. Nikt jej nie zobaczy, dopóki nie zrobisz kroku 7.
 
 Od tej chwili po każdej zmianie wystarczy **Plik → Opublikuj w Roblox** (*Publish to Roblox*, Alt+P).
 
@@ -19,32 +19,27 @@ W Studio: zakładka **Strona główna → Ustawienia gry** (*Home → Game Setti
 - **Miejsca** (*Places*) → Twoje miejsce → **Maksymalna liczba graczy**: **8**. Na wyspie jest 8 działek.
 - Kliknij **Zapisz**.
 
-## 3. Muzyka, okrzyki i obrazki brainrotów (samo się robi)
+## 3. Muzyka (dodajesz sam)
 
-Po publikacji serwer przy każdym starcie sam szuka w Sklepie twórcy Robloxa:
+Gra ma gotowe miejsce na dwa utwory: spokojny na co dzień i szybki na napady oraz bitwy pisklaków. Dopóki ich nie wpiszesz, jest cisza.
 
-- spokojnej muzyki w tle i szybkiej muzyki na napady,
-- okrzyków i obrazków brainrotów do karabinu.
+1. W **Przyborniku** (*Toolbox*) otwórz **Sklep twórcy → Dźwięk → Muzyka**, wpisz na przykład `happy` albo `epic battle` i posłuchaj wyników.
+2. Prawy klik na wybranym utworze → **Kopiuj ID zasobu** (*Copy Asset ID*).
+3. W **Eksploratorze** otwórz **ReplicatedStorage → Shared → Config → Music** (dwuklik).
+4. Wklej ID w cudzysłowie:
+   - `calm = { id = "rbxassetid://TWOJE_ID", ... }` to muzyka na co dzień;
+   - `raid = { id = "rbxassetid://TWOJE_ID", ... }` to muzyka na napad.
+5. Daj ▶ i posłuchaj. W prawym dolnym rogu pojawi się przycisk 🎵 do wyciszania.
 
-Sprawdź to tak: **Okno → Wyjście**, potem ▶ **Graj**. Po kilku sekundach powinny pojawić się linie:
+Nie zmieniaj niczego poza tekstem między cudzysłowami.
 
-- `[BrainrotAssets] Muzyka calm: …` i `Muzyka raid: …`
-- `[BrainrotAssets] Znaleziono assety dla X z 6 brainrotów.`
+## 4. Okrzyki i obrazki brainrotów (samo się robi)
 
-Jeśli coś nie pasuje (na przykład muzyka jest brzydka albo brainrot ma zły obrazek), wpisz konkretne ID ręcznie. Ręczne ID zawsze wygrywa.
+Po publikacji serwer przy starcie sam szuka okrzyków i obrazków brainrotów w Sklepie twórcy. W oknie **Wyjście** pojawi się linia `[BrainrotAssets] Znaleziono assety dla X z 6 brainrotów.`
 
-1. W **Przyborniku** (*Toolbox*) otwórz **Sklep twórcy → Dźwięk** (muzyka lub efekty) albo **Zasoby 2D** (obrazki).
-2. Wpisz nazwę, na przykład `cappuccino assassino`, i posłuchaj wyników.
-3. Prawy klik na wybranym → **Kopiuj ID zasobu** (*Copy Asset ID*).
-4. Wklej ID:
-   - muzykę do `src/shared/Config/Music.lua`, w pole `id`, jako `"rbxassetid://ID"`;
-   - brainroty do `src/shared/Config/Weapons.lua`, w pola `sound` i `image`.
+Jeśli któryś brainrot ma zły obrazek albo dźwięk, wpisz ID ręcznie w **ReplicatedStorage → Shared → Config → Weapons**, w pola `sound` i `image`. ID kopiujesz z Przybornika tak samo jak muzykę. Ręczne ID zawsze wygrywa.
 
-   Możesz też po prostu wysłać mi te ID, a ja je wpiszę.
-
-Przycisk 🎵 w prawym dolnym rogu ekranu wycisza muzykę.
-
-## 4. Robux (opcjonalnie, można później)
+## 5. Robux (opcjonalnie, można później)
 
 Na stronie **create.roblox.com → Kreacje → Twoja gra → Monetyzacja** (*Creations → Monetization*):
 
@@ -61,20 +56,20 @@ Na stronie **create.roblox.com → Kreacje → Twoja gra → Monetyzacja** (*Cre
 
 Dopóki tych ID nie ma, przyciski Robux pokazują „Wkrótce”. Reszta gry działa normalnie, więc z tym krokiem możesz poczekać.
 
-## 5. Test przed otwarciem
+## 6. Test przed otwarciem
 
 1. W Studio: **Test → Klienci i serwery → 2 graczy → Start** (*Clients and Servers*). Otworzą się dwa okna gry. Sprawdź:
    - kopanie, ulepszenie fabryki i kilofa;
    - zakup dekoracji i obrony;
    - zaproszenie do sojuszu (okienko Akceptuj / Ignoruj / Blokuj);
    - rzut jajkiem w drugiego gracza;
-   - napad: muzyka powinna zmienić się na szybką;
+   - napad (jeśli wpisałeś muzykę, zmieni się na szybką);
    - pisklaki: wyklucie, trening, atak na dziki obóz i na drugiego gracza;
    - karabin brainrot (przycisk „Test (Studio)”).
 2. W oknie **Wyjście** nie powinno być czerwonych błędów. Jeśli są, wklej mi zrzut.
 3. Zagraj w opublikowaną grę z poziomu strony Robloxa. Zarób trochę pieniędzy, wyjdź i wejdź ponownie: pieniądze powinny zostać.
 
-## 6. Strona gry i otwarcie dla wszystkich
+## 7. Strona gry i otwarcie dla wszystkich
 
 Na stronie **create.roblox.com → Kreacje → Twoja gra**:
 

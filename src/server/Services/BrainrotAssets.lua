@@ -8,7 +8,6 @@ local AssetService = game:GetService("AssetService")
 local AvatarEditorService = game:GetService("AvatarEditorService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Music = require(ReplicatedStorage.Shared.Config.Music)
 local Weapons = require(ReplicatedStorage.Shared.Config.Weapons)
 
 local BrainrotAssets = {}
@@ -18,11 +17,6 @@ local MAX_CLIP_SECONDS = 8 -- krótkie okrzyki, nie całe piosenki
 local folder = Instance.new("Folder")
 folder.Name = "BrainrotAssets"
 folder.Parent = ReplicatedStorage
-
--- Muzyka w tle: atrybuty calm / raid z ID utworów (klient: Music.client.lua).
-local musicFolder = Instance.new("Folder")
-musicFolder.Name = "GameMusic"
-musicFolder.Parent = ReplicatedStorage
 
 local function store(name: string, kind: string, value: string)
 	local entry = folder:FindFirstChild(name) or Instance.new("Folder")
@@ -72,30 +66,6 @@ local function findSound(keyword: string): string?
 	return nil
 end
 
-local function findMusic(keyword: string): string?
-	local params = Instance.new("AudioSearchParams")
-	params.SearchKeyword = keyword
-	params.MinDuration = Music.minDuration
-	pcall(function()
-		params.AudioSubType = Enum.AudioSubType.Music
-	end)
-	local ok, pages = callWithTimeout(AssetService.SearchAudio, AssetService, params)
-	if not ok then
-		warn("[BrainrotAssets] Nie udało się wyszukać muzyki:", keyword, pages)
-		return nil
-	end
-	local okPage, page = pcall(pages.GetCurrentPage, pages)
-	if not okPage then
-		return nil
-	end
-	for _, audio in page do
-		if audio.Id then
-			return "rbxassetid://" .. audio.Id
-		end
-	end
-	return nil
-end
-
 local function findImage(keyword: string): string?
 	local params = CatalogSearchParams.new()
 	params.SearchKeyword = keyword
@@ -126,32 +96,13 @@ function BrainrotAssets.Get(brainrot)
 end
 
 function BrainrotAssets.Init()
-	-- Ręcznie wpisana muzyka działa od razu, także w nieopublikowanej grze.
-	for name, track in Music.tracks do
-		if track.id ~= "" then
-			musicFolder:SetAttribute(name, track.id)
-		end
-	end
 	if game.GameId == 0 then
 		-- Wyszukiwarka Robloxa działa tylko w opublikowanej grze.
-		warn("[BrainrotAssets] Gra nie jest opublikowana, więc nie szukam okrzyków i obrazków brainrotów. Karabin strzela emotkami z dźwiękiem zastępczym, a muzyka w tle gra tylko z ręcznie wpisanym ID (Config/Music.lua). Opublikuj grę (Plik → Opublikuj w Roblox) i uruchom ją ponownie.")
+		warn("[BrainrotAssets] Gra nie jest opublikowana, więc nie szukam okrzyków i obrazków brainrotów. Karabin strzela emotkami z dźwiękiem zastępczym. Opublikuj grę (Plik → Opublikuj w Roblox) i uruchom ją ponownie.")
 		return
 	end
 	task.spawn(function()
-		print("[BrainrotAssets] Szukam muzyki oraz okrzyków i obrazków brainrotów...")
-		for name, track in Music.tracks do
-			if track.id == "" then
-				for _, keyword in track.keywords do
-					local id = findMusic(keyword)
-					if id then
-						musicFolder:SetAttribute(name, id)
-						print(string.format("[BrainrotAssets] Muzyka %s: %s (%s)", name, id, keyword))
-						break
-					end
-				end
-				task.wait(0.5)
-			end
-		end
+		print("[BrainrotAssets] Szukam okrzyków i obrazków brainrotów...")
 		for _, brainrot in Weapons.brainrots do
 			if brainrot.sound == "" then
 				local sound = findSound(brainrot.name)
