@@ -536,6 +536,7 @@ end
 
 local function finishArmy(player: Player)
 	atWar[player] = nil
+	player:SetAttribute("InBattle", nil) -- muzyka bitewna u klienta
 	if player.Parent then
 		PlayerData.MarkChanged(player)
 		ChickService.Refresh(player)
@@ -551,6 +552,7 @@ local function resolveBattle(key)
 	end
 	local now = os.time()
 	local victim = battle.victim
+	victim:SetAttribute("InBattle", nil)
 	local victimData = victim.Parent and PlayerData.Get(victim)
 	local attackers = {}
 	local power = 0
@@ -664,6 +666,8 @@ local function sendToWar(player: Player, target)
 		end
 
 		atWar[player] = true
+		player:SetAttribute("InBattle", true)
+		victim:SetAttribute("InBattle", true)
 		data.WarCooldownUntil = now + Chicks.war.cooldown
 		PlayerData.MarkChanged(player)
 		marchArmy(player, (victimPlot.origin * CFrame.new(CAMP_POSITION)).Position)
@@ -702,6 +706,7 @@ local function sendToWar(player: Player, target)
 		return
 	end
 	atWar[player] = true
+	player:SetAttribute("InBattle", true)
 	data.WarCooldownUntil = now + Chicks.war.cooldown
 	PlayerData.MarkChanged(player)
 	Remotes.notify(player, string.format("⚔️ %d pisklaków (siła %d) idzie na: %s (obrona %d)", count, power, bandit.name, bandit.power))

@@ -23,6 +23,10 @@ Gra typu tycoon, w której celem jest zarobienie jak największej ilości pieni�
 
 Domyślnie gra używa dźwięków wbudowanych w Robloxa (`src/shared/Config/Sounds.lua`, tam też głośność).
 
+### Muzyka w tle
+
+Spokojna muzyka gra na co dzień, a szybka podczas napadu i bitwy pisklaków (`src/client/Music.client.lua`). W opublikowanej grze serwer sam wyszukuje utwory w Creator Store. Konkretny utwór wpiszesz w `src/shared/Config/Music.lua`. Przycisk 🎵 w prawym dolnym rogu wycisza muzykę.
+
 ### Prawdziwe obrazki i okrzyki brainrotów
 
 W `src/shared/Config/Weapons.lua` każdy brainrot (`Weapons.brainrots`) ma pola `image` i `sound`. W Roblox Studio otwórz View → Toolbox → Marketplace, wybierz Images albo Audio, wpisz nazwę (np. „tralalero tralala”, „tung tung sahur”), kliknij wynik prawym przyciskiem → Copy Asset ID i wklej jako `"rbxassetid://ID"`. Assety z Creator Store są sprawdzone przez Robloxa, więc można ich używać w grze; plików z internetu skrypt nie wgra.
