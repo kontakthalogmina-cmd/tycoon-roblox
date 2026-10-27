@@ -11,6 +11,7 @@ local LuckLevels = require(Shared.Config.LuckLevels)
 local LineConfig = require(Shared.Config.ProductionLine)
 local EggOdds = require(Shared.EggOdds)
 local Format = require(Shared.Format)
+local SoundFx = require(Shared.SoundFx)
 
 local PlayerData = require(script.Parent.PlayerData)
 local PlotService = require(script.Parent.PlotService)
@@ -157,6 +158,7 @@ local function spawnEgg(player: Player, token)
 		end
 		PlayerData.AddCash(player, value)
 		popup(line.collectorTop, "+" .. Format.money(value), rarity.color)
+		SoundFx.at(rarityIndex >= NOTIFY_FROM_RARITY and "levelUp" or "coin", line.collectorTop.Position, 0.05)
 		if rarityIndex >= NOTIFY_FROM_RARITY then
 			Remotes.notify(player, string.format("%s jajko! +%s", rarity.name, Format.money(value)))
 		end

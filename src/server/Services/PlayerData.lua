@@ -53,6 +53,8 @@ local TEMPLATE = {
 	CampLevel = 1,
 	WarCooldownUntil = 0, -- os.time()
 	WarShieldUntil = 0, -- os.time(), ochrona po przegranej wojnie
+	Decorations = {}, -- [decorationId] = ile sztuk stoi w bazie
+	BlockedPlayers = {}, -- [tostring(userId)] = true, zaproszenia do sojuszu od nich przepadają
 	Eggs = 0, -- waluta na bronie (🥚), zdobywana z linii produkcyjnej
 	OwnedWeapons = {},
 	EquippedWeapon = "",
@@ -188,6 +190,14 @@ function PlayerData.AddReceipt(player: Player, purchaseId: string)
 end
 
 -- Dane wysyłane do klienta (bez wewnętrznych pól).
+local function countKeys(t)
+	local count = 0
+	for _ in t do
+		count += 1
+	end
+	return count
+end
+
 function PlayerData.Snapshot(data)
 	return {
 		Cash = data.Cash,
@@ -206,6 +216,8 @@ function PlayerData.Snapshot(data)
 		CampLevel = data.CampLevel,
 		WarCooldownUntil = data.WarCooldownUntil,
 		WarShieldUntil = data.WarShieldUntil,
+		Decorations = data.Decorations,
+		BlockedCount = countKeys(data.BlockedPlayers),
 		Eggs = data.Eggs,
 		OwnedWeapons = data.OwnedWeapons,
 		EquippedWeapon = data.EquippedWeapon,

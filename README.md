@@ -4,22 +4,26 @@ Gra typu tycoon, w której celem jest zarobienie jak największej ilości pieni�
 
 ## Pętla rozgrywki
 
-1. Wszyscy gracze (do 8) są na jednej latającej wyspie. Działki stoją w kręgu, a na środku jest plac ze złotym jajkiem (strefa bezpieczna).
-2. Z **fabryki** wychodzi **linia produkcyjna**: co 2 sekundy taśmą jedzie jajko do skupu i zamienia się w $.
-3. Jajka mają **rzadkości** (Zwykłe, Niezwykłe, Rzadkie, Epickie, Legendarne, Mityczne) z mnożnikiem wartości od x1 do x200. Każda rzadkość ma swój kolor, Legendarne mienią się tęczą, a Mityczne pulsują.
-4. **Szczęście** (kupowane za $) zwiększa szansę na lepsze jajka.
-5. **Skórki jajek** (kupowane za $) zmieniają wygląd jajek i podnoszą ich wartość.
-6. **Kopalnia** jest w górze: tunelem z torami schodzisz do jaskini i rozbijasz skały z żyłami rudy **kilofem** trzymanym w ręce (klik lub dotknięcie = zamach; celuje w skałę pod kursorem albo najbliższą).
-7. **Fabrykę ulepszasz surowcami** z kopalni albo **za Robux**. Wyższy poziom fabryki = droższe jajka.
-8. Za $ ulepszasz **kopalnię** (więcej skał, nowe rudy) i kupujesz **lepsze kilofy** (twardsze rudy, mocniejsze uderzenia).
-9. **Sklep** otwierasz przyciskiem na dole ekranu albo przy budce SKLEP na działce. Zakładki: Fabryka, Kopalnia, Kilofy, Szczęście, Skórki, Robux.
-10. **Napady:** od poziomu fabryki 3 możesz w zakładce Napady wybrać bazę innego gracza. Trafiasz pod jego Bramę napadu i masz 90 s, żeby dobiec do **skarbca** i przytrzymać E. Udany napad zabiera ofierze 20% gotówki i 2 poziomy fabryki, a ofiara widzi nick napastnika i dostaje 10 min tarczy.
-11. **Skarbiec:** za $ wzmacniasz skarbiec (dłuższy rabunek). Gdy stoisz przy swoim skarbcu, nie da się go obrabować, a w czasie napadu możesz bić napastnika kilofem. Udana obrona = brak strat.
-12. **Obrona działki (zakładka 🛡️ Obrona):** miny (wybuchają pod obcym), niewidzialne pułapki (widzi je tylko właściciel, unieruchamiają), działa i wieże czarodzieja. Stoją na stałych miejscach działki i same atakują każdego obcego, który wejdzie na działkę. Każda kolejna sztuka jest droższa.
-13. **Pisklaki (zakładka 🐣 Pisklaki):** wykluwasz je za jajka 🥚 (5 rodzajów, od Żółtego pisklaka po Smoczego), trenujesz w obozie treningowym na działce (XP i poziomy, obóz ulepszasz za $) i wysyłasz całą armię na wojnę: na innych graczy (wygrana zabiera 8% ich gotówki) albo na dzikie obozy (nagroda $ i jajka). Działki bronią pisklaki w domu i budowle obronne.
-12. **Walka:** jajkiem do rzucania (bez limitu) przewracasz i odpychasz innych. Za jajka 🥚 z linii produkcyjnej kupujesz brainrot karabiny. Pokonanie gracza (także zrzucenie go z wyspy) zabiera mu 10% gotówki jako wielkie złote jajko, które trzeba donieść do swojej działki. Trafienie niosącego sprawia, że je upuszcza.
-12. Kopalnia pokazuje tylko rudy potrzebne do kolejnych ulepszeń fabryki.
-13. Ranking w tabeli graczy: `Pieniądze` i `Zarobione`.
+1. Wszyscy gracze (do 8, czyli 8 fabryk na wyspę) są na jednej latającej wyspie. Działki stoją w kręgu, a na środku jest plac ze złotym jajkiem (strefa bezpieczna). **Ustaw w Game Settings → Places maks. 8 graczy na serwer.**
+2. Każda baza na starcie wygląda tak samo: żywopłot dookoła, brama z nazwą właściciela, fabryka, taśma, kopalnia w górze, skarbiec, obóz pisklaków i latarnie.
+3. Z **fabryki** wychodzi **linia produkcyjna**: co 2 sekundy taśmą jedzie jajko do skupu i zamienia się w $ (z dźwiękiem monety). Jajka mają **rzadkości** z mnożnikiem wartości. **Szczęście** i **skórki jajek** kupujesz za $.
+4. **Kopalnia** jest w górze: tunelem schodzisz do jaskini i rozbijasz skały kilofem. **Fabrykę ulepszasz rudami** albo **za Robux** (fajerwerki przy awansie). Kopalnia pokazuje tylko rudy potrzebne do kolejnych ulepszeń.
+5. **Sklep:** przycisk na dole ekranu albo budka SKLEP. Panel **🎯 Co teraz?** w lewym dolnym rogu zawsze podpowiada następny krok, a **❓ Jak grać** pokazuje krótką instrukcję.
+6. **Dekoracje (🌸):** kwiaty, ławki, drzewa, flagi, fontanna i pomnik złotej kury za $. Stają w stałych miejscach, więc baza zawsze wygląda porządnie.
+7. **Walka:** jajkiem (bez limitu) przewracasz innych. Za jajka 🥚 kupujesz brainrot karabiny. **Brainrot Pistolet Maszynowy** (Game Pass za Robux) strzela latającymi brainrotami z okrzykami. Pokonany gracz gubi 10% gotówki jako złote jajko, które trzeba donieść do swojej bazy.
+8. **Obrona (🛡️):** miny, niewidzialne pułapki (widzi je tylko właściciel), działa i wieże czarodzieja same atakują obcych na działce.
+9. **Pisklaki (🐣):** wykluwasz je za jajka, trenujesz w obozie (XP i poziomy) i wysyłasz na napady. Napad zabiera najwyżej **10% gotówki** celu. Kilku sojuszników może zaatakować tę samą bazę (przycisk 🤝 Dołącz) i dzielą łup po równo. Bazy bronią pisklaki w domu, budowle obronne i pisklaki sojuszników obrońcy; po przegranej obrońca ma 10 min tarczy.
+10. **Sojusze (🤝):** zapraszasz gracza, a on widzi okienko **Akceptuj / Ignoruj / Blokuj** (zablokowany nie może więcej zapraszać). Sojusznicy się nie ranią, obrona ich nie atakuje, a nad głowami widać znaczek 🤝. Do 4 graczy w sojuszu.
+11. **Napady na skarbiec (⚔️):** od poziomu fabryki 3 możesz też osobiście obrabować skarbiec innego gracza (90 s, przytrzymaj E). Udany napad zabiera 20% gotówki i 2 poziomy fabryki. Gdy stoisz przy swoim skarbcu, nie da się go obrabować.
+12. Ranking w tabeli graczy: `Pieniądze` i `Zarobione`.
+
+## Dźwięki
+
+Domyślnie gra używa dźwięków wbudowanych w Robloxa (`src/shared/Config/Sounds.lua`). Prawdziwe brainrot okrzyki (np. „Tung tung sahur”) znajdziesz w Creator Store (Toolbox → Audio): wpisz ich ID w `Sounds.brainrot` jako `rbxassetid://123`.
+
+## Robux
+
+ID wpisujesz w `src/shared/Config/Products.lua`: Developer Products (ulepszenie fabryki, pakiet gotówki) i Game Pass `BrainrotSMG`. Dopóki ID = 0, w Studio pistolet maszynowy można wziąć za darmo do testów.
 
 ## Struktura projektu (Rojo)
 

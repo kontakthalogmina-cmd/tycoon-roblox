@@ -66,9 +66,10 @@ Chicks.camp = {
 
 Chicks.war = {
 	cooldown = 120, -- sekundy między wyprawami
-	travelTime = 8, -- marsz armii do celu
-	stealPercent = 0.08, -- ile gotówki obrońcy zabiera wygrana wojna
-	victimShield = 300, -- po przegranej wojnie gracz jest chroniony przed kolejną (s)
+	travelTime = 12, -- marsz armii do celu (w tym czasie sojusznicy mogą dołączyć)
+	stealPercent = 0.10, -- najwyżej tyle gotówki obrońcy zabiera wygrana; łup dzielony po równo między napastników
+	victimShield = 600, -- po przegranej gracz jest chroniony przed kolejnym atakiem (s)
+	allyHelp = 0.5, -- sojusznicy obrońcy pomagają połową siły swoich pisklaków
 	injuredTime = 90, -- po przegranej pisklaki leczą się i nie walczą / nie trenują
 	winXp = 15, -- XP dla każdego pisklaka z wygranej wyprawy
 	homeFactor = 0.8, -- pisklaki w domu bronią z tą częścią siły

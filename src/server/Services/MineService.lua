@@ -6,6 +6,7 @@ local Ores = require(Config.Ores)
 local Pickaxes = require(Config.Pickaxes)
 local MineLevels = require(Config.MineLevels)
 local OreNeeds = require(ReplicatedStorage.Shared.OreNeeds)
+local SoundFx = require(ReplicatedStorage.Shared.SoundFx)
 
 local PlayerData = require(script.Parent.PlayerData)
 local PlotService = require(script.Parent.PlotService)
@@ -194,13 +195,17 @@ local function onHit(player: Player, node)
 	end
 
 	local hp = node:GetAttribute("HP") - pickaxe.damage
+	local rockPart = node:FindFirstChild("Rock")
+	local soundAt = rockPart and rockPart.Position or node:GetPivot().Position
 	if hp > 0 then
+		SoundFx.at("mineHit", soundAt, 0.12)
 		node:SetAttribute("HP", hp)
 		node.Rock.Info.Label.Text = string.format("%s (%d)", ore.name, hp)
 		return
 	end
 
 	-- Skała rozbita.
+	SoundFx.at("oreBreak", soundAt, 0.1)
 	state.nodes[node] = nil
 	state.slots[index] = nil
 	node:Destroy()

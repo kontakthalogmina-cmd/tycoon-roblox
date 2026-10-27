@@ -26,11 +26,24 @@ Weapons.rifles = {
 		color = Color3.fromRGB(230, 90, 200) },
 	{ id = "lirili", name = "Lirili Snajperka", price = 10000, damage = 65, fireRate = 1.2, range = 400, spread = 0.1,
 		color = Color3.fromRGB(255, 210, 60) },
+	-- Za Robux (Game Pass, ID w Config/Products.lua): strzela latającymi brainrotami z ich okrzykami.
+	{ id = "brainrotsmg", name = "Brainrot Pistolet Maszynowy", robux = true, brainrot = true, price = 0, damage = 9,
+		fireRate = 0.09, range = 180, spread = 3, color = Color3.fromRGB(255, 90, 160) },
 }
 Weapons.byId = {}
 for _, rifle in Weapons.rifles do
 	Weapons.byId[rifle.id] = rifle
 end
+
+-- Pociski brainrot pistoletu maszynowego.
+Weapons.brainrots = {
+	{ text = "🦈", name = "Tralalero", color = Color3.fromRGB(80, 170, 255) },
+	{ text = "🪵", name = "Tung Tung", color = Color3.fromRGB(190, 140, 80) },
+	{ text = "🐊", name = "Bombardiro", color = Color3.fromRGB(90, 200, 90) },
+	{ text = "🌵", name = "Lirili", color = Color3.fromRGB(120, 210, 90) },
+	{ text = "☕", name = "Cappuccino", color = Color3.fromRGB(170, 110, 70) },
+	{ text = "🐸", name = "Patapim", color = Color3.fromRGB(110, 220, 120) },
+}
 
 -- Napisy pokazywane przy trafieniu.
 Weapons.phrases = { "BRAINROT!", "SKIBIDI!", "TUNG TUNG!", "BOMBARDIRO!", "TRALALERO!", "BRR BRR!", "SAHUR!" }

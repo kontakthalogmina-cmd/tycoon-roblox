@@ -22,6 +22,9 @@ local Chicks = require(Config.Chicks)
 local EggOdds = require(Shared.EggOdds)
 local OreNeeds = require(Shared.OreNeeds)
 local Format = require(Shared.Format)
+local SoundFx = require(Shared.SoundFx)
+local Decorations = require(Config.Decorations)
+local RunService = game:GetService("RunService")
 
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local player = Players.LocalPlayer
@@ -157,6 +160,9 @@ local function button(label: string, color: Color3, size: UDim2?)
 	end)
 	btn.MouseButton1Up:Connect(function()
 		TweenService:Create(scale, TweenInfo.new(0.1), { Scale = 1.05 }):Play()
+	end)
+	btn.Activated:Connect(function()
+		SoundFx.ui("click")
 	end)
 	return btn
 end
@@ -350,6 +356,7 @@ local toast = text({
 })
 corner(UDim.new(0, 12)).Parent = toast
 make("UIPadding", { PaddingLeft = UDim.new(0, 16), PaddingRight = UDim.new(0, 16), Parent = toast })
+local toastScale = make("UIScale", { Parent = toast })
 local toastToken = 0
 local function showToast(message: string)
 	toastToken += 1
@@ -357,6 +364,10 @@ local function showToast(message: string)
 	toast.Text = message
 	toast.TextTransparency = 0
 	toast.BackgroundTransparency = 0.15
+	-- Komunikat lekko „wyskakuje”.
+	toastScale.Scale = 0.8
+	TweenService:Create(toastScale, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+	SoundFx.ui("notify")
 	task.delay(2.5, function()
 		if token == toastToken then
 			TweenService:Create(toast, TweenInfo.new(0.4), { TextTransparency = 1, BackgroundTransparency = 1 }):Play()
@@ -364,6 +375,11 @@ local function showToast(message: string)
 	end)
 end
 Remotes:WaitForChild("Notify").OnClientEvent:Connect(showToast)
+Remotes:WaitForChild("PlaySound").OnClientEvent:Connect(function(name)
+	if type(name) == "string" then
+		SoundFx.ui(name)
+	end
+end)
 localNotify.Event:Connect(showToast)
 
 ---------------------------------------------------------------------------
@@ -665,7 +681,7 @@ end
 -- Zakładka: Robux -------------------------------------------------------
 -- Zakładka: Napady -------------------------------------------------------
 -- Zakładka: Bronie ---------------------------------------------------------
-local weaponPage = addTab("weapons", "🔫 Bronie", Color3.fromRGB(230, 90, 200), 6)
+local weaponPage = addTab("weapons", "🔫 Bronie", Color3.fromRGB(230, 90, 200), 7)
 sectionTitle(weaponPage, 0, "Bronie")
 local eggsLabel = text({ Parent = weaponPage, LayoutOrder = 1, Font = TITLE_FONT, TextSize = 18, TextColor3 = C.gold })
 local throwCard = card(weaponPage, 2, Color3.fromRGB(240, 235, 220), "🥚")
@@ -685,13 +701,32 @@ text({
 })
 local rifleCards = {}
 for i, rifle in Weapons.rifles do
-	local c = card(weaponPage, 3 + i, rifle.color, "🔫")
+	local c = card(weaponPage, 3 + i, rifle.color, rifle.robux and "💎" or "🔫")
 	c.title.Text = rifle.name
 	c.desc.Text = string.format("Obrażenia %d  •  %.1f strzału/s  •  zasięg %d", rifle.damage, 1 / rifle.fireRate, rifle.range)
+	if rifle.brainrot then
+		c.desc.Text ..= "\nStrzela latającymi brainrotami z okrzykami! Kupujesz raz, masz na zawsze."
+	end
 	c.button.Activated:Connect(function()
-		Remotes.BuyWeapon:FireServer(rifle.id)
+		local owned = state and state.OwnedWeapons and state.OwnedWeapons[rifle.id]
+		if rifle.robux and not owned and Products.BrainrotSMG.gamePassId ~= 0 then
+			MarketplaceService:PromptGamePassPurchase(player, Products.BrainrotSMG.gamePassId)
+		else
+			Remotes.BuyWeapon:FireServer(rifle.id)
+		end
 	end)
 	rifleCards[rifle.id] = c
+end
+local smgPrice = nil -- cena Game Passa w Robux (pobierana raz)
+if Products.BrainrotSMG.gamePassId ~= 0 then
+	task.spawn(function()
+		local ok, info = pcall(function()
+			return MarketplaceService:GetProductInfo(Products.BrainrotSMG.gamePassId, Enum.InfoType.GamePass)
+		end)
+		if ok and info and info.PriceInRobux then
+			smgPrice = info.PriceInRobux
+		end
+	end)
 end
 
 local function renderWeapons()
@@ -705,6 +740,17 @@ local function renderWeapons()
 		elseif state.OwnedWeapons and state.OwnedWeapons[rifle.id] then
 			btn.Text = "Weź"
 			setButtonColor(btn, C.green)
+		elseif rifle.robux then
+			if Products.BrainrotSMG.gamePassId ~= 0 then
+				btn.Text = smgPrice and ("R$ " .. smgPrice) or "Kup R$"
+				setButtonColor(btn, C.robux)
+			elseif RunService:IsStudio() then
+				btn.Text = "Test (Studio)"
+				setButtonColor(btn, C.robux)
+			else
+				btn.Text = "Wkrótce"
+				setButtonColor(btn, C.disabled)
+			end
 		else
 			btn.Text = "🥚 " .. Format.number(rifle.price)
 			setButtonColor(btn, eggs >= rifle.price and C.blue or C.disabled)
@@ -713,7 +759,7 @@ local function renderWeapons()
 end
 
 -- Zakładka: Obrona działki -----------------------------------------------
-local defensePage = addTab("defense", "🛡️ Obrona", Color3.fromRGB(90, 160, 230), 7)
+local defensePage = addTab("defense", "🛡️ Obrona", Color3.fromRGB(90, 160, 230), 8)
 sectionTitle(defensePage, 0, "Obrona działki")
 text({
 	Parent = defensePage,
@@ -749,7 +795,7 @@ local function renderDefenses()
 	end
 end
 
-local raidPage = addTab("raids", "⚔️ Napady", C.red, 8)
+local raidPage = addTab("raids", "⚔️ Napady", C.red, 11)
 sectionTitle(raidPage, 0, "Wzmocnienie skarbca")
 local defenseCard = card(raidPage, 1, Color3.fromRGB(120, 120, 140), "🛡️")
 local setDefenseProgress = progressBar(raidPage, 2, Color3.fromRGB(150, 150, 175))
@@ -931,7 +977,7 @@ text({
 	TextWrapped = true,
 	AutomaticSize = Enum.AutomaticSize.Y,
 	Text = string.format(
-		"Na wojnę idą wszystkie zdrowe pisklaki. Wygrana z graczem zabiera mu %d%% gotówki, a z dzikim obozem daje nagrodę. Przegrana: pisklaki leczą się %d s. Twoją działkę bronią pisklaki w domu i budowle z zakładki 🛡️ Obrona.",
+		"Na napad idą wszystkie zdrowe pisklaki. Wygrana zabiera graczowi najwyżej %d%% gotówki. Gdy atakujecie razem z sojusznikiem (przycisk 🤝 Dołącz), łup dzielicie po równo. Dziki obóz daje nagrodę. Przegrana: pisklaki leczą się %d s. Twojej bazy bronią pisklaki w domu, budowle z zakładki 🛡️ Obrona i pisklaki sojuszników.",
 		math.floor(Chicks.war.stealPercent * 100 + 0.5),
 		Chicks.war.injuredTime
 	),
@@ -1042,13 +1088,13 @@ local function refreshWar()
 		warStatus.Text = string.format("Twoja armia: %d pisklaków, siła %d. Wybierz cel:", result.count, result.power)
 	end
 	local order = 0
-	local function addTarget(icon, color, title, defense, extra, targetId, available)
+	local function addTarget(icon, color, title, defense, extra, targetId, available, label)
 		order += 1
 		local c = card(warList, order, available and color or C.disabled, icon)
 		c.title.Text = title
 		local chance = result.power > 0 and Chicks.winChance(result.power, defense) or 0
 		c.desc.Text = string.format("Obrona %d  •  szansa wygranej %d%%%s", defense, math.floor(chance * 100 + 0.5), extra)
-		c.button.Text = available and "⚔️ Atakuj" or "🛡️ Tarcza"
+		c.button.Text = label or (available and "⚔️ Atakuj" or "🛡️ Tarcza")
 		setButtonColor(c.button, (available and not blocked) and C.red or C.disabled)
 		c.button.Activated:Connect(function()
 			if available and not blocked then
@@ -1058,8 +1104,17 @@ local function refreshWar()
 		end)
 	end
 	for _, target in result.players do
-		local extra = target.shield > 0 and string.format("  •  tarcza %d s", target.shield) or ("  •  łup " .. Format.money(math.floor(target.cash * Chicks.war.stealPercent)))
-		addTarget("🏰", C.red, target.name, target.defense, extra, target.userId, target.shield <= 0)
+		local loot = "  •  łup do " .. Format.money(math.floor(target.cash * Chicks.war.stealPercent))
+		if target.allyAttacking then
+			-- Wspólny atak z sojusznikiem: łup dzielony po równo.
+			addTarget("🤝", C.green, target.name, target.defense, loot .. " (dzielony)", target.userId, true, "🤝 Dołącz")
+		elseif target.busy then
+			addTarget("🏰", C.red, target.name, target.defense, "  •  ktoś już go atakuje", target.userId, false, "Zajęte")
+		elseif target.shield > 0 then
+			addTarget("🏰", C.red, target.name, target.defense, string.format("  •  tarcza %d s", target.shield), target.userId, false)
+		else
+			addTarget("🏰", C.red, target.name, target.defense, loot, target.userId, true)
+		end
 	end
 	for i, bandit in Chicks.war.bandits do
 		addTarget(bandit.icon, Color3.fromRGB(120, 90, 60), bandit.name, bandit.power, string.format("  •  nagroda %s + 🥚 %d", Format.money(bandit.cash), bandit.eggs), "bandit:" .. i, true)
@@ -1068,7 +1123,203 @@ end
 warRefresh.Activated:Connect(refreshWar)
 tabCallbacks.chicks = refreshWar
 
-local robuxPage = addTab("robux", "💎 Robux", C.robux, 10)
+-- Zakładka: Dekoracje -----------------------------------------------------
+local decorPage = addTab("decor", "🌸 Dekoracje", Color3.fromRGB(240, 120, 170), 6)
+sectionTitle(decorPage, 0, "Dekoracje bazy")
+text({
+	Parent = decorPage,
+	LayoutOrder = 1,
+	TextColor3 = C.muted,
+	TextWrapped = true,
+	AutomaticSize = Enum.AutomaticSize.Y,
+	Text = "Każda baza zaczyna tak samo. Upiększ swoją: dekoracje stają w stałych miejscach, więc zawsze wygląda porządnie.",
+})
+local decorCards = {}
+for i, decoration in Decorations.list do
+	local c = card(decorPage, 1 + i, Color3.fromRGB(150, 90, 120), decoration.icon)
+	c.button.Activated:Connect(function()
+		Remotes.BuyDecoration:FireServer(decoration.id)
+	end)
+	decorCards[decoration.id] = c
+end
+
+local function renderDecor()
+	for _, decoration in Decorations.list do
+		local c = decorCards[decoration.id]
+		local owned = (state.Decorations and state.Decorations[decoration.id]) or 0
+		c.title.Text = string.format("%s  (%d/%d)", decoration.name, owned, decoration.max)
+		c.desc.Text = decoration.description
+		if owned >= decoration.max then
+			c.button.Text = "Komplet"
+			setButtonColor(c.button, C.disabled)
+		else
+			c.button.Text = Format.money(decoration.price)
+			setButtonColor(c.button, state.Cash >= decoration.price and C.green or C.disabled)
+		end
+	end
+end
+
+-- Zakładka: Sojusz ---------------------------------------------------------
+do
+	local allyPage = addTab("alliance", "🤝 Sojusz", C.green, 10)
+	sectionTitle(allyPage, 0, "Twój sojusz")
+	text({
+		Parent = allyPage,
+		LayoutOrder = 1,
+		TextColor3 = C.muted,
+		TextWrapped = true,
+		AutomaticSize = Enum.AutomaticSize.Y,
+		Text = "Sojusznicy nie mogą się ranić, obrona Waszych baz ich nie atakuje, a pisklaki mogą razem napaść na jedną bazę (łup dzielicie po równo). Pisklaki sojuszników pomagają też bronić Twojej bazy.",
+	})
+	local allyList = make("Frame", {
+		Parent = allyPage,
+		LayoutOrder = 2,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+	}, { make("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }) })
+	local leaveButton = button("🚪 Opuść sojusz", C.red, UDim2.fromOffset(190, 38))
+	leaveButton.LayoutOrder = 3
+	leaveButton.Parent = allyPage
+	leaveButton.Activated:Connect(function()
+		Remotes.AllianceLeave:FireServer()
+	end)
+	sectionTitle(allyPage, 4, "Zaproś gracza")
+	local inviteList = make("Frame", {
+		Parent = allyPage,
+		LayoutOrder = 5,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+	}, { make("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }) })
+	local blockedLabel = text({ Parent = allyPage, LayoutOrder = 6, TextColor3 = C.muted, Text = "" })
+	local unblockButton = button("Odblokuj wszystkich", C.blue, UDim2.fromOffset(200, 34))
+	unblockButton.TextSize = 15
+	unblockButton.LayoutOrder = 7
+	unblockButton.Parent = allyPage
+	unblockButton.Activated:Connect(function()
+		Remotes.AllianceUnblock:FireServer()
+	end)
+
+	local allies = {} -- lista { userId, name } z serwera
+	local function isAlly(userId: number)
+		for _, ally in allies do
+			if ally.userId == userId then
+				return true
+			end
+		end
+		return false
+	end
+
+	local function renderAlliance()
+		for _, list in { allyList, inviteList } do
+			for _, child in list:GetChildren() do
+				if not child:IsA("UIListLayout") then
+					child:Destroy()
+				end
+			end
+		end
+		if #allies == 0 then
+			local c = card(allyList, 1, C.disabled, "🤝")
+			c.title.Text = "Nie masz sojuszu"
+			c.desc.Text = "Zaproś kogoś poniżej. Sojusz może mieć do 4 graczy."
+			c.button.Visible = false
+		end
+		for i, ally in allies do
+			local c = card(allyList, i, C.green, "🤝")
+			c.title.Text = ally.name
+			c.desc.Text = "Sojusznik"
+			c.button.Visible = false
+		end
+		leaveButton.Visible = #allies > 0
+		local order = 0
+		for _, other in Players:GetPlayers() do
+			if other ~= player and not isAlly(other.UserId) then
+				order += 1
+				local c = card(inviteList, order, C.blue, "👤")
+				c.title.Text = other.DisplayName
+				c.desc.Text = "@" .. other.Name
+				c.button.Text = "🤝 Zaproś"
+				setButtonColor(c.button, C.green)
+				local userId = other.UserId
+				c.button.Activated:Connect(function()
+					Remotes.AllianceInviteSend:FireServer(userId)
+				end)
+			end
+		end
+		if order == 0 then
+			text({ Parent = inviteList, Text = "Na serwerze nie ma innych graczy do zaproszenia.", TextColor3 = C.muted })
+		end
+		local blocked = state and state.BlockedCount or 0
+		blockedLabel.Text = string.format("Zablokowani gracze: %d", blocked)
+		unblockButton.Visible = blocked > 0
+	end
+	tabCallbacks.alliance = renderAlliance
+	Players.PlayerAdded:Connect(function()
+		if currentTab == "alliance" then
+			renderAlliance()
+		end
+	end)
+	Players.PlayerRemoving:Connect(function()
+		task.defer(function()
+			if currentTab == "alliance" then
+				renderAlliance()
+			end
+		end)
+	end)
+
+	-- Znaczek 🤝 nad głowami sojuszników (widzi go tylko ten gracz).
+	local allyTags = {}
+	local function refreshAllyTags()
+		for _, tag in allyTags do
+			tag:Destroy()
+		end
+		table.clear(allyTags)
+		for _, ally in allies do
+			local other = Players:GetPlayerByUserId(ally.userId)
+			local head = other and other.Character and other.Character:FindFirstChild("Head")
+			if head then
+				local tag = make("BillboardGui", {
+					Parent = gui,
+					Adornee = head,
+					Size = UDim2.fromOffset(120, 30),
+					StudsOffset = Vector3.new(0, 2.6, 0),
+					AlwaysOnTop = true,
+					MaxDistance = 250,
+				}, {
+					text({
+						Size = UDim2.fromScale(1, 1),
+						Text = "🤝 " .. ally.name,
+						TextXAlignment = Enum.TextXAlignment.Center,
+						Font = TITLE_FONT,
+						TextSize = 18,
+						TextColor3 = Color3.fromRGB(120, 255, 150),
+						TextStrokeTransparency = 0.3,
+					}),
+				})
+				table.insert(allyTags, tag)
+			end
+		end
+	end
+	Remotes:WaitForChild("AllianceState").OnClientEvent:Connect(function(info)
+		allies = info and info.allies or {}
+		refreshAllyTags()
+		if currentTab == "alliance" then
+			renderAlliance()
+		end
+	end)
+	task.spawn(function()
+		-- Postacie sojuszników odradzają się, więc co chwilę przypinamy znaczki od nowa.
+		while true do
+			task.wait(3)
+			if #allies > 0 then
+				refreshAllyTags()
+			end
+		end
+	end)
+end
+
+local robuxPage = addTab("robux", "💎 Robux", C.robux, 12)
 sectionTitle(robuxPage, 0, "Sklep Robux")
 local robuxFactory = card(robuxPage, 1, C.orange, "🏭")
 robuxFactory.title.Text = "Ulepszenie fabryki"
@@ -1302,6 +1553,147 @@ local function renderSkins()
 end
 
 local lastCash = 0
+---------------------------------------------------------------------------
+-- Podpowiedź „Co teraz?” i krótka instrukcja, żeby nikt się nie pogubił
+---------------------------------------------------------------------------
+
+local hintLabel -- „Co teraz?” (ustawiane niżej)
+local nextHint
+do
+	hintLabel = text({
+		TextWrapped = true,
+		AutomaticSize = Enum.AutomaticSize.Y,
+		TextSize = 15,
+		LayoutOrder = 1,
+		Text = "",
+	})
+	local guideButton = button("❓ Jak grać", C.blue, UDim2.new(1, 0, 0, 32))
+	guideButton.TextSize = 15
+	guideButton.LayoutOrder = 2
+	make("Frame", {
+		Parent = gui,
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.new(0, 12, 1, -12),
+		Size = UDim2.fromOffset(250, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundColor3 = C.window,
+		BackgroundTransparency = 0.12,
+	}, {
+		corner(UDim.new(0, 14)),
+		stroke(C.gold, 1.5),
+		padding(10),
+		make("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }),
+		text({ Text = "🎯 CO TERAZ?", Font = TITLE_FONT, TextSize = 18, TextColor3 = C.gold, LayoutOrder = 0 }),
+		hintLabel,
+		guideButton,
+	})
+
+	local GUIDE = {
+		"🥚 <b>Fabryka</b> sama robi jajka. Taśma zamienia je w $.",
+		"⛏️ <b>Kopalnia</b> (tunel w górze za bazą): klikaj w skały. Rudy ulepszają fabrykę.",
+		"🛒 <b>Sklep</b> (przycisk na dole): kilofy, ulepszenia, broń, obrona, dekoracje.",
+		"🎯 <b>Walka</b>: rzucaj jajkami i strzelaj. Pokonany gracz gubi złote jajko z częścią $.",
+		"🐣 <b>Pisklaki</b>: wykluj je za jajka, trenuj i wysyłaj na napady (max 10% $ celu).",
+		"🛡️ <b>Obrona</b>: miny, pułapki, działa i wieże same bronią bazy.",
+		"🤝 <b>Sojusz</b>: zaproś gracza. Nie ranicie się i napadacie razem, dzieląc łup.",
+	}
+	local guideOverlay = make("TextButton", {
+		Parent = gui,
+		Visible = false,
+		Text = "",
+		AutoButtonColor = false,
+		BackgroundColor3 = Color3.new(0, 0, 0),
+		BackgroundTransparency = 0.45,
+		Size = UDim2.fromScale(1, 1),
+		ZIndex = 20,
+	})
+	local guideScale = make("UIScale")
+	make("Frame", {
+		Parent = guideOverlay,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromOffset(460, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundColor3 = C.window,
+		Active = true,
+	}, {
+		corner(UDim.new(0, 18)),
+		stroke(C.gold, 3),
+		padding(16),
+		guideScale,
+		make("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }),
+		text({ Text = "❓ JAK GRAĆ", Font = TITLE_FONT, TextSize = 26, TextColor3 = C.gold, Size = UDim2.new(1, 0, 0, 32), LayoutOrder = 0 }),
+		text({
+			Text = table.concat(GUIDE, "\n\n"),
+			TextWrapped = true,
+			AutomaticSize = Enum.AutomaticSize.Y,
+			TextSize = 16,
+			LayoutOrder = 1,
+		}),
+		text({ Text = "Kliknij gdziekolwiek, żeby zamknąć.", TextColor3 = C.muted, TextXAlignment = Enum.TextXAlignment.Center, LayoutOrder = 2 }),
+	})
+	guideButton.Activated:Connect(function()
+		guideOverlay.Visible = true
+		guideScale.Scale = 0.85
+		TweenService:Create(guideScale, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+	end)
+	guideOverlay.Activated:Connect(function()
+		guideOverlay.Visible = false
+	end)
+
+	-- Wybiera jedną najważniejszą rzecz do zrobienia teraz.
+	nextHint = function()
+		local level = state.FactoryLevel
+		local nextFactory = FactoryLevels[level + 1]
+		if nextFactory then
+			local enough, any = true, false
+			for oreId, amount in nextFactory.cost do
+				any = true
+				if (state.Ores[oreId] or 0) < amount then
+					enough = false
+				end
+			end
+			if any and enough then
+				return "Masz rudy! Otwórz 🛒 <b>Sklep → Fabryka</b> i ulepsz fabrykę."
+			end
+		end
+		for _, pickaxe in Pickaxes.list do
+			if not (state.OwnedPickaxes and state.OwnedPickaxes[pickaxe.id]) then
+				if state.Cash >= pickaxe.price then
+					return string.format("Stać Cię na <b>%s</b>! 🛒 Sklep → Kilofy. Lepszy kilof kopie więcej rud.", pickaxe.name)
+				end
+				break
+			end
+		end
+		local chicks = state.Chicks or {}
+		if #chicks == 0 and (state.Eggs or 0) >= Chicks.hatchPrice then
+			return "Masz jajka 🥚! Wykluj pierwszego pisklaka: 🛒 <b>Sklep → Pisklaki</b>."
+		end
+		if #chicks > 0 then
+			local training = false
+			for _, chick in chicks do
+				if chick.training then
+					training = true
+				end
+			end
+			if not training then
+				return "Wyślij pisklaki na <b>trening</b> 💪 (Sklep → Pisklaki), żeby były silniejsze."
+			end
+		end
+		local defenses = 0
+		for _, count in state.Defenses or {} do
+			defenses += count
+		end
+		if defenses == 0 and state.Cash >= Defenses.list[1].price then
+			return "Chroń bazę! Postaw minę 💣: 🛒 <b>Sklep → Obrona</b>."
+		end
+		if level <= 2 then
+			return "Idź do <b>kopalni</b> ⛏️ (tunel w górze za bazą) i klikaj w skały, żeby zebrać rudy."
+		end
+		return "Zbieraj $, kop rudy i ulepszaj fabrykę. Napadaj pisklakami albo rzucaj jajkami w innych! 🥚"
+	end
+end
+
 local function render()
 	local luck = LuckLevels[state.LuckLevel].luck
 	local eggValue = FactoryLevels[state.FactoryLevel].income * LineConfig.interval
@@ -1330,6 +1722,8 @@ local function render()
 	renderWeapons()
 	renderDefenses()
 	renderChicks()
+	renderDecor()
+	hintLabel.Text = nextHint()
 end
 
 ---------------------------------------------------------------------------
@@ -1396,6 +1790,126 @@ task.spawn(function()
 		task.wait(0.25)
 	end
 end)
+
+---------------------------------------------------------------------------
+-- Okienko zaproszenia do sojuszu: Akceptuj / Ignoruj / Blokuj
+---------------------------------------------------------------------------
+
+do
+	local inviteTitle = text({
+		Font = TITLE_FONT,
+		TextSize = 20,
+		TextWrapped = true,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Size = UDim2.new(1, 0, 0, 50),
+	})
+	local inviteTimer = text({
+		TextSize = 14,
+		TextColor3 = C.muted,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Position = UDim2.fromOffset(0, 50),
+		Size = UDim2.new(1, 0, 0, 18),
+	})
+	local acceptButton = button("✅ Akceptuj", C.green, UDim2.new(0.32, -4, 0, 40))
+	local ignoreButton = button("Ignoruj", C.disabled, UDim2.new(0.32, -4, 0, 40))
+	local blockButton = button("⛔ Blokuj", C.red, UDim2.new(0.32, -4, 0, 40))
+	for _, b in { acceptButton, ignoreButton, blockButton } do
+		b.TextSize = 16
+	end
+	local inviteScale = make("UIScale")
+	local invitePopup = make("Frame", {
+		Parent = gui,
+		Visible = false,
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 130),
+		Size = UDim2.fromOffset(400, 130),
+		BackgroundColor3 = C.window,
+		ZIndex = 10,
+	}, {
+		corner(UDim.new(0, 16)),
+		stroke(C.green, 3),
+		padding(10),
+		inviteScale,
+		inviteTitle,
+		inviteTimer,
+		make("Frame", {
+			BackgroundTransparency = 1,
+			Position = UDim2.new(0, 0, 1, -40),
+			Size = UDim2.new(1, 0, 0, 40),
+		}, {
+			make("UIListLayout", {
+				FillDirection = Enum.FillDirection.Horizontal,
+				HorizontalAlignment = Enum.HorizontalAlignment.Center,
+				Padding = UDim.new(0, 6),
+			}),
+			acceptButton,
+			ignoreButton,
+			blockButton,
+		}),
+	})
+
+	local inviteQueue = {}
+	local currentInvite = nil
+	local showNextInvite
+
+	local function answerInvite(answer: string)
+		if not currentInvite then
+			return
+		end
+		Remotes.AllianceRespond:FireServer(currentInvite.userId, answer)
+		currentInvite = nil
+		invitePopup.Visible = false
+		task.delay(0.3, showNextInvite)
+	end
+
+	showNextInvite = function()
+		if currentInvite or #inviteQueue == 0 then
+			return
+		end
+		currentInvite = table.remove(inviteQueue, 1)
+		local invite = currentInvite
+		inviteTitle.Text = string.format("🤝 %s zaprasza Cię do sojuszu!", invite.name)
+		invitePopup.Visible = true
+		inviteScale.Scale = 0.7
+		TweenService:Create(inviteScale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+		SoundFx.ui("invite")
+		local deadline = os.clock() + invite.timeout
+		task.spawn(function()
+			while currentInvite == invite do
+				local left = math.ceil(deadline - os.clock())
+				if left <= 0 then
+					answerInvite("ignore")
+					break
+				end
+				inviteTimer.Text = string.format("Wygaśnie za %d s", left)
+				task.wait(0.25)
+			end
+		end)
+	end
+
+	acceptButton.Activated:Connect(function()
+		answerInvite("accept")
+	end)
+	ignoreButton.Activated:Connect(function()
+		answerInvite("ignore")
+	end)
+	blockButton.Activated:Connect(function()
+		answerInvite("block")
+	end)
+	Remotes:WaitForChild("AllianceInvite").OnClientEvent:Connect(function(invite)
+		if type(invite) ~= "table" then
+			return
+		end
+		-- To samo zaproszenie od tej samej osoby nie ustawia się w kolejce drugi raz.
+		for _, queued in inviteQueue do
+			if queued.userId == invite.userId then
+				return
+			end
+		end
+		table.insert(inviteQueue, invite)
+		showNextInvite()
+	end)
+end
 
 Remotes:WaitForChild("DataUpdate").OnClientEvent:Connect(function(snapshot)
 	state = snapshot

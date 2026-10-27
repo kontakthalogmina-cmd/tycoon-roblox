@@ -12,6 +12,8 @@ local PlayerData = require(script.Parent.PlayerData)
 local PlotService = require(script.Parent.PlotService)
 local CombatService = require(script.Parent.CombatService)
 local Remotes = require(script.Parent.Remotes)
+local AllianceService = require(script.Parent.AllianceService)
+local SoundFx = require(ReplicatedStorage.Shared.SoundFx)
 
 local DefenseService = {}
 
@@ -194,7 +196,7 @@ end
 local function intruders(owner: Player, plot)
 	local list = {}
 	for _, other in Players:GetPlayers() do
-		if other ~= owner then
+		if other ~= owner and not AllianceService.AreAllies(owner, other) then
 			local character = other.Character
 			local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 			local root = character and character:FindFirstChild("HumanoidRootPart")
@@ -248,6 +250,7 @@ local function updateDefense(owner: Player, item, targets, now: number)
 			end
 		end
 		hit(owner, target.player, defense, item.position)
+		SoundFx.at("mineHit", item.position, 0.1)
 		task.delay(2, function()
 			for _, p in item.model:GetDescendants() do
 				if p:IsA("BasePart") then
@@ -263,11 +266,13 @@ local function updateDefense(owner: Player, item, targets, now: number)
 			barrel.CFrame = CFrame.lookAt(pivot, pivot + look) * CFrame.Angles(0, math.pi / 2, 0)
 		end
 		local from = pivot + look.Unit * 2.4
+		SoundFx.at("cannon", from, 0.1)
 		projectile(from, target.root.Position, Color3.fromRGB(30, 30, 30), 1.4, 0.35, function()
 			boom(target.root.Position)
 			hit(owner, target.player, defense, pivot)
 		end)
 	elseif defense.id == "wizard" then
+		SoundFx.at("magic", item.aim.Position, 0.1)
 		projectile(item.aim.Position, target.root.Position, Color3.fromRGB(200, 120, 255), 0.9, 0.25, function()
 			hit(owner, target.player, defense, item.aim.Position)
 		end)

@@ -15,6 +15,8 @@ local RaidService = require(Services.RaidService)
 local CombatService = require(Services.CombatService)
 local DefenseService = require(Services.DefenseService)
 local ChickService = require(Services.ChickService)
+local DecorService = require(Services.DecorService)
+local AllianceService = require(Services.AllianceService)
 local MonetizationService = require(Services.MonetizationService)
 
 local LuckLevels = require(game:GetService("ReplicatedStorage").Shared.Config.LuckLevels)
@@ -34,6 +36,18 @@ atmosphere.Haze = 1.5
 atmosphere.Color = Color3.fromRGB(200, 220, 240)
 atmosphere.Parent = Lighting
 
+-- Lekkie efekty: żywsze kolory, delikatna poświata świateł i promienie słońca.
+local function effect(className: string, props)
+	local inst = Lighting:FindFirstChildOfClass(className) or Instance.new(className)
+	for key, value in props do
+		inst[key] = value
+	end
+	inst.Parent = Lighting
+end
+effect("ColorCorrectionEffect", { Saturation = 0.18, Contrast = 0.06, Brightness = 0.02 })
+effect("BloomEffect", { Intensity = 0.6, Size = 22, Threshold = 1.6 })
+effect("SunRaysEffect", { Intensity = 0.06, Spread = 0.6 })
+
 -- Woła funkcję serwisu tak, żeby błąd jednego systemu nie wyłączał całej gry.
 local function safe(label: string, fn, ...)
 	local ok, err = pcall(fn, ...)
@@ -50,6 +64,8 @@ safe("RaidService.Init", RaidService.Init)
 safe("CombatService.Init", CombatService.Init)
 safe("DefenseService.Init", DefenseService.Init)
 safe("ChickService.Init", ChickService.Init)
+safe("DecorService.Init", DecorService.Init)
+safe("AllianceService.Init", AllianceService.Init)
 
 local function setupLeaderstats(player: Player, data)
 	local leaderstats = Instance.new("Folder")
@@ -95,6 +111,9 @@ local function onPlayerAdded(player: Player)
 	safe("RaidService.RefreshDefense", RaidService.RefreshDefense, player)
 	safe("DefenseService.Refresh", DefenseService.Refresh, player)
 	safe("ChickService.Refresh", ChickService.Refresh, player)
+	safe("DecorService.Refresh", DecorService.Refresh, player)
+	safe("AllianceService.PlayerAdded", AllianceService.PlayerAdded, player)
+	task.spawn(safe, "MonetizationService.PlayerAdded", MonetizationService.PlayerAdded, player)
 	safe("FactoryService.UpdateLabel", FactoryService.UpdateLabel, player)
 	PlayerData.MarkChanged(player)
 end
@@ -109,6 +128,8 @@ local function onPlayerRemoving(player: Player)
 	safe("ProductionLineService.Stop", ProductionLineService.Stop, player)
 	safe("DefenseService.Clear", DefenseService.Clear, player)
 	safe("ChickService.PlayerLeft", ChickService.PlayerLeft, player)
+	safe("DecorService.Clear", DecorService.Clear, player)
+	safe("AllianceService.PlayerLeft", AllianceService.PlayerLeft, player)
 	safe("PlotService.Release", PlotService.Release, player)
 	PlayerData.Save(player)
 	PlayerData.Release(player)

@@ -27,6 +27,14 @@ local NAMES = {
 	"TrainChick", -- klient -> serwer: trenuj / przestań (uid, bool)
 	"UpgradeCamp", -- klient -> serwer: ulepsz obóz treningowy za $
 	"SendToWar", -- klient -> serwer: wyślij armię (userId albo "bandit:N")
+	"BuyDecoration", -- klient -> serwer: kup dekorację bazy (id)
+	"AllianceState", -- serwer -> klient: lista sojuszników
+	"AllianceInvite", -- serwer -> klient: ktoś zaprasza do sojuszu (okienko)
+	"AllianceInviteSend", -- klient -> serwer: zaproś gracza (userId)
+	"AllianceRespond", -- klient -> serwer: odpowiedź (userId, "accept" | "ignore" | "block")
+	"AllianceLeave", -- klient -> serwer: opuść sojusz
+	"AllianceUnblock", -- klient -> serwer: odblokuj wszystkich
+	"PlaySound", -- serwer -> klient: dźwięk słyszany tylko przez tego gracza (nazwa)
 }
 
 local folder = Instance.new("Folder")

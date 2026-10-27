@@ -14,6 +14,9 @@ local PlayerData = require(script.Parent.PlayerData)
 local PlotService = require(script.Parent.PlotService)
 local WeaponTools = require(script.Parent.WeaponTools)
 local Remotes = require(script.Parent.Remotes)
+local AllianceService = require(script.Parent.AllianceService)
+local MonetizationService = require(script.Parent.MonetizationService)
+local SoundFx = require(ReplicatedStorage.Shared.SoundFx)
 
 local CombatService = {}
 
@@ -90,6 +93,52 @@ local function tracer(from: Vector3, to: Vector3, color: Color3)
 	beam.CFrame = CFrame.lookAt(from, to) * CFrame.new(0, 0, -length / 2)
 	beam.Parent = workspace
 	Debris:AddItem(beam, 0.08)
+end
+
+-- Latający brainrot (pocisk pistoletu maszynowego): emotka z podpisem leci do celu.
+local function brainrotBolt(from: Vector3, to: Vector3)
+	local brainrot = Weapons.brainrots[math.random(#Weapons.brainrots)]
+	local bolt = Instance.new("Part")
+	bolt.Anchored = true
+	bolt.CanCollide = false
+	bolt.CanQuery = false
+	bolt.Transparency = 1
+	bolt.Size = Vector3.one
+	bolt.CFrame = CFrame.new(from)
+	local gui = Instance.new("BillboardGui")
+	gui.Size = UDim2.fromOffset(70, 60)
+	gui.AlwaysOnTop = true
+	gui.MaxDistance = 160
+	local icon = Instance.new("TextLabel")
+	icon.BackgroundTransparency = 1
+	icon.Size = UDim2.fromScale(1, 0.7)
+	icon.TextScaled = true
+	icon.Text = brainrot.text
+	icon.Parent = gui
+	local name = Instance.new("TextLabel")
+	name.BackgroundTransparency = 1
+	name.Position = UDim2.fromScale(0, 0.68)
+	name.Size = UDim2.fromScale(1, 0.32)
+	name.TextScaled = true
+	name.Font = Enum.Font.FredokaOne
+	name.TextColor3 = brainrot.color
+	name.TextStrokeTransparency = 0.2
+	name.Text = brainrot.name
+	name.Parent = gui
+	gui.Parent = bolt
+	local trail = Instance.new("Trail")
+	local a0, a1 = Instance.new("Attachment"), Instance.new("Attachment")
+	a0.Position, a1.Position = Vector3.new(0, 0.3, 0), Vector3.new(0, -0.3, 0)
+	a0.Parent, a1.Parent = bolt, bolt
+	trail.Attachment0, trail.Attachment1 = a0, a1
+	trail.Color = ColorSequence.new(brainrot.color)
+	trail.Lifetime = 0.15
+	trail.LightEmission = 0.6
+	trail.Parent = bolt
+	bolt.Parent = workspace
+	local time = math.clamp((to - from).Magnitude / 220, 0.05, 0.6)
+	TweenService:Create(bolt, TweenInfo.new(time, Enum.EasingStyle.Linear), { CFrame = CFrame.new(to) }):Play()
+	Debris:AddItem(bolt, time + 0.05)
 end
 
 local function markHit(target: Player, attacker: Player)
@@ -289,7 +338,7 @@ end
 -- opts: { direction, knockback, upward, duration, damage, text, color, dropMessage }
 function CombatService.Knock(target: Player, attacker: Player?, opts)
 	local root, humanoid = aliveRoot(target)
-	if not root or inSafeZone(root.Position) then
+	if not root or inSafeZone(root.Position) or AllianceService.AreAllies(target, attacker) then
 		return false
 	end
 	local flat = (opts.direction or Vector3.zero) * Vector3.new(1, 0, 1)
@@ -360,6 +409,7 @@ local function throwEgg(player: Player, target)
 	mesh.Parent = egg
 	egg.CFrame = CFrame.new(position)
 	egg.Parent = workspace
+	SoundFx.at("throw", position, 0.1)
 
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Exclude
@@ -375,6 +425,7 @@ local function throwEgg(player: Player, target)
 			connection:Disconnect()
 			egg:Destroy()
 			if result then
+				SoundFx.at("splat", result.Position, 0.15)
 				local hitPlayer = playerFromPart(result.Instance)
 				if hitPlayer and hitPlayer ~= player then
 					knock(hitPlayer, player, velocity)
@@ -423,7 +474,14 @@ local function fireWeapon(player: Player, target)
 
 	local barrel = tool:FindFirstChild("Barrel", true)
 	local muzzle = barrel and barrel:FindFirstChild("Muzzle")
-	tracer(muzzle and muzzle.WorldPosition or origin, hitPosition, rifle.color)
+	local from = muzzle and muzzle.WorldPosition or origin
+	if rifle.brainrot then
+		brainrotBolt(from, hitPosition)
+		SoundFx.brainrot(from)
+	else
+		tracer(from, hitPosition, rifle.color)
+		SoundFx.at("shot", from, 0.08)
+	end
 
 	if result then
 		local hitPlayer = playerFromPart(result.Instance)
@@ -431,7 +489,7 @@ local function fireWeapon(player: Player, target)
 		if hitPlayer and hitPlayer ~= player then
 			root, humanoid = aliveRoot(hitPlayer)
 		end
-		if root and not inSafeZone(root.Position) then
+		if root and not inSafeZone(root.Position) and not AllianceService.AreAllies(player, hitPlayer) then
 			markHit(hitPlayer, player)
 			humanoid:TakeDamage(rifle.damage)
 			popup(result.Position, Weapons.phrases[math.random(#Weapons.phrases)] .. " -" .. rifle.damage, rifle.color)
@@ -447,6 +505,15 @@ local function buyWeapon(player: Player, weaponId)
 	local data = PlayerData.Get(player)
 	local rifle = type(weaponId) == "string" and Weapons.byId[weaponId]
 	if not data or not rifle then
+		return
+	end
+	if not data.OwnedWeapons[rifle.id] and rifle.robux then
+		if MonetizationService.CanTestSMG() then
+			MonetizationService.GrantSMG(player)
+			Remotes.notify(player, "(Test w Studio) Broń za darmo, dopóki nie wpiszesz ID Game Passa.")
+		else
+			Remotes.notify(player, "Tę broń kupisz za Robux w zakładce 🔫 Bronie.")
+		end
 		return
 	end
 	if not data.OwnedWeapons[rifle.id] then

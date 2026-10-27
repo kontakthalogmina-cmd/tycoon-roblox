@@ -1,13 +1,15 @@
--- Developer Products (Robux): obsługa ProcessReceipt.
+-- Zakupy za Robux: Developer Products (ProcessReceipt) i Game Pass z brainrot pistoletem maszynowym.
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Products = require(ReplicatedStorage.Shared.Config.Products)
 
 local PlayerData = require(script.Parent.PlayerData)
 local FactoryService = require(script.Parent.FactoryService)
 local Remotes = require(script.Parent.Remotes)
+local WeaponTools = require(script.Parent.WeaponTools)
 
 local MonetizationService = {}
 
@@ -59,8 +61,51 @@ local function processReceipt(receipt)
 	return Enum.ProductPurchaseDecision.PurchaseGranted
 end
 
+-- Game Pass: brainrot pistolet maszynowy -------------------------------------
+
+local function grantSMG(player: Player, announce: boolean)
+	local data = PlayerData.Get(player)
+	local weaponId = Products.BrainrotSMG.weaponId
+	if not data or data.OwnedWeapons[weaponId] then
+		return
+	end
+	data.OwnedWeapons[weaponId] = true
+	data.EquippedWeapon = weaponId
+	PlayerData.MarkChanged(player)
+	WeaponTools.Give(player)
+	if announce then
+		Remotes.notify(player, "🔫 Masz Brainrot Pistolet Maszynowy! Jest w plecaku.")
+	end
+end
+
+-- Sprawdza przy wejściu, czy gracz ma już Game Pass (np. kupił go poza grą).
+function MonetizationService.PlayerAdded(player: Player)
+	local passId = Products.BrainrotSMG.gamePassId
+	if passId == 0 then
+		return
+	end
+	local ok, owns = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, passId)
+	if ok and owns then
+		grantSMG(player, false)
+	end
+end
+
+-- W Studio, dopóki nie ma prawdziwego Game Passa, broń można wziąć za darmo do testów.
+function MonetizationService.CanTestSMG(): boolean
+	return Products.BrainrotSMG.gamePassId == 0 and RunService:IsStudio()
+end
+
+function MonetizationService.GrantSMG(player: Player)
+	grantSMG(player, true)
+end
+
 function MonetizationService.Init()
 	MarketplaceService.ProcessReceipt = processReceipt
+	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, passId, purchased)
+		if purchased and passId == Products.BrainrotSMG.gamePassId and passId ~= 0 then
+			grantSMG(player, true)
+		end
+	end)
 end
 
 return MonetizationService

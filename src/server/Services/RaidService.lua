@@ -11,6 +11,7 @@ local PlayerData = require(script.Parent.PlayerData)
 local PlotService = require(script.Parent.PlotService)
 local FactoryService = require(script.Parent.FactoryService)
 local MineService = require(script.Parent.MineService)
+local AllianceService = require(script.Parent.AllianceService)
 local Remotes = require(script.Parent.Remotes)
 
 local RaidService = {}
@@ -199,10 +200,13 @@ end
 
 -- Start napadu --------------------------------------------------------------
 
-local function canBeRaided(victim: Player, now: number)
+local function canBeRaided(victim: Player, now: number, attacker: Player?)
 	local data = PlayerData.Get(victim)
 	if not data or not PlotService.Get(victim) then
 		return false, "ten gracz nie ma bazy"
+	end
+	if AllianceService.AreAllies(victim, attacker) then
+		return false, "to Twój sojusznik"
 	end
 	if data.FactoryLevel < Raids.minFactoryLevel then
 		return false, string.format("fabryka poniżej poz. %d (ochrona nowych graczy)", Raids.minFactoryLevel)
@@ -238,7 +242,7 @@ local function startRaid(attacker: Player, targetUserId)
 		Remotes.notify(attacker, string.format("Następny napad za %d s.", math.ceil(Raids.attackerCooldown - since)))
 		return
 	end
-	local ok, reason = canBeRaided(victim, os.time())
+	local ok, reason = canBeRaided(victim, os.time(), attacker)
 	if not ok then
 		Remotes.notify(attacker, "Nie możesz napaść: " .. reason .. ".")
 		return
@@ -345,7 +349,7 @@ local function getTargets(player: Player)
 	for _, other in Players:GetPlayers() do
 		local data = PlayerData.Get(other)
 		if other ~= player and data then
-			local ok, reason = canBeRaided(other, now)
+			local ok, reason = canBeRaided(other, now, player)
 			table.insert(list, {
 				userId = other.UserId,
 				name = other.DisplayName,

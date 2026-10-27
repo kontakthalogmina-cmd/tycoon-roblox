@@ -553,51 +553,71 @@ local function buildVault(model: Model, origin: CFrame)
 	}
 end
 
--- Ozdoby bazy: fontanna, latarnie, kwiaty i ławki.
-local function buildDecor(model: Model, origin: CFrame, rng: Random)
-	local folder = Instance.new("Model")
-	folder.Name = "Decor"
-	folder.Parent = model
-	local stone = Color3.fromRGB(200, 195, 185)
+-- Granice działki (w układzie działki): wszystkie bazy wyglądają na starcie tak samo.
+PlotBuilder.BOUNDS = { minX = -105, maxX = 105, minZ = -75, maxZ = 145 }
+local GATE_X = -10 -- brama od strony placu
+local BACK_GATE_X = -55 -- brama napadu z tyłu
+local SIDE_GATE_Z = 30 -- przejścia do sąsiadów
+local GATE_HALF = 7
 
-	-- Fontanna
-	local f = origin * CFrame.new(16, 0, 14)
-	verticalCylinder(folder, f * CFrame.new(0, 0.2, 0), 0.4, 18, Color3.fromRGB(170, 165, 155), Enum.Material.Cobblestone)
-	verticalCylinder(folder, f * CFrame.new(0, 1, 0), 2, 11, stone, Enum.Material.Marble)
-	local water = verticalCylinder(folder, f * CFrame.new(0, 1.6, 0), 1.6, 10, Color3.fromRGB(70, 150, 220), Enum.Material.Glass)
-	water.Transparency = 0.35
-	water.CanCollide = false
-	verticalCylinder(folder, f * CFrame.new(0, 3.5, 0), 4, 1.4, stone, Enum.Material.Marble)
-	local top = verticalCylinder(folder, f * CFrame.new(0, 5.6, 0), 0.6, 4, stone, Enum.Material.Marble)
-	local spray = Instance.new("ParticleEmitter")
-	spray.Color = ColorSequence.new(Color3.fromRGB(180, 220, 255))
-	spray.Transparency = NumberSequence.new(0.3, 1)
-	spray.Size = NumberSequence.new(0.4, 0.1)
-	spray.Lifetime = NumberRange.new(0.8, 1.2)
-	spray.Rate = 60
-	spray.Speed = NumberRange.new(8, 11)
-	spray.SpreadAngle = Vector2.new(20, 20)
-	spray.Acceleration = Vector3.new(0, -30, 0)
-	spray.EmissionDirection = Enum.NormalId.Right -- walec leży na boku, Right = w górę
-	spray.Parent = top
-
-	-- Ławki dookoła fontanny
-	for i = 0, 3 do
-		local angle = math.rad(i * 90 + 45)
-		local pos = Vector3.new(16 + math.cos(angle) * 12, 0, 14 + math.sin(angle) * 12)
-		local bench = origin * CFrame.lookAt(pos, Vector3.new(16, 0, 14))
-		part(folder, bench * CFrame.new(0, 1.6, 0), Vector3.new(5, 0.4, 1.6), Color3.fromRGB(140, 95, 55), Enum.Material.WoodPlanks)
-		part(folder, bench * CFrame.new(0, 2.6, 0.75), Vector3.new(5, 1.6, 0.3), Color3.fromRGB(140, 95, 55), Enum.Material.WoodPlanks)
-		for _, x in { -2, 2 } do
-			part(folder, bench * CFrame.new(x, 0.7, 0), Vector3.new(0.4, 1.4, 1.4), Color3.fromRGB(40, 40, 45), Enum.Material.Metal)
+-- Żywopłot wzdłuż odcinka z przerwami na bramy.
+local function hedgeLine(folder, origin: CFrame, a: Vector3, b: Vector3, gaps)
+	local dir = (b - a).Unit
+	local length = (b - a).Magnitude
+	local cuts = { 0 }
+	for _, g in gaps do
+		table.insert(cuts, g - GATE_HALF)
+		table.insert(cuts, g + GATE_HALF)
+	end
+	table.insert(cuts, length)
+	table.sort(cuts)
+	local green = Color3.fromRGB(60, 125, 55)
+	for i = 1, #cuts - 1, 2 do
+		local from, to = cuts[i], cuts[i + 1]
+		if to - from > 0.5 then
+			local mid = a + dir * ((from + to) / 2)
+			local cf = origin * CFrame.lookAt(mid + Vector3.new(0, 1.75, 0), mid + Vector3.new(0, 1.75, 0) + dir)
+			part(folder, cf, Vector3.new(2.6, 3.5, to - from), green, Enum.Material.Grass)
+			-- Kamienne słupki na końcach odcinków
+			for _, d in { from, to } do
+				local p = a + dir * d
+				part(folder, origin * CFrame.new(p + Vector3.new(0, 2.2, 0)), Vector3.new(3.2, 4.4, 3.2), Color3.fromRGB(200, 195, 185), Enum.Material.Cobblestone)
+			end
 		end
 	end
+end
+
+-- Schludna baza: żywopłot dookoła, brama z nazwą właściciela i latarnie przy ścieżkach.
+-- Fontanna, ławki, kwiaty itd. są do kupienia jako dekoracje (DecorService).
+local function buildBase(model: Model, origin: CFrame)
+	local folder = Instance.new("Model")
+	folder.Name = "Base"
+	folder.Parent = model
+	local B = PlotBuilder.BOUNDS
+	local corners = {
+		Vector3.new(B.minX, 0, B.minZ), Vector3.new(B.maxX, 0, B.minZ),
+		Vector3.new(B.maxX, 0, B.maxZ), Vector3.new(B.minX, 0, B.maxZ),
+	}
+	hedgeLine(folder, origin, corners[1], corners[2], { GATE_X - B.minX })
+	hedgeLine(folder, origin, corners[2], corners[3], { SIDE_GATE_Z - B.minZ })
+	hedgeLine(folder, origin, corners[3], corners[4], { B.maxX - BACK_GATE_X })
+	hedgeLine(folder, origin, corners[4], corners[1], { B.maxZ - SIDE_GATE_Z })
+
+	-- Brama wejściowa z nazwą właściciela
+	local gate = origin * CFrame.new(GATE_X, 0, B.minZ)
+	for _, x in { -GATE_HALF, GATE_HALF } do
+		verticalCylinder(folder, gate * CFrame.new(x, 5, 0), 10, 1.8, Color3.fromRGB(235, 230, 220), Enum.Material.Marble)
+		local cap = part(folder, gate * CFrame.new(x, 10.6, 0), Vector3.new(2.4, 2.4, 2.4), Color3.fromRGB(255, 200, 60), Enum.Material.Foil)
+		cap.Shape = Enum.PartType.Ball
+	end
+	local beam = part(folder, gate * CFrame.new(0, 9.6, 0), Vector3.new(GATE_HALF * 2 + 2, 2.2, 1.2), Color3.fromRGB(70, 45, 30), Enum.Material.WoodPlanks)
+	beam.Name = "GateSign"
 
 	-- Latarnie przy ścieżkach
 	for _, pos in {
 		Vector3.new(-15, 0, 0), Vector3.new(-15, 0, 16), Vector3.new(-5, 0, -6), Vector3.new(-22, 0, -15),
 		Vector3.new(-36, 0, -15), Vector3.new(4, 0, 34), Vector3.new(-40, 0, 40), Vector3.new(-50, 0, 80),
-		Vector3.new(-60, 0, 100),
+		Vector3.new(-60, 0, 100), Vector3.new(-17, 0, -70), Vector3.new(-3, 0, -70),
 	} do
 		local base = origin * CFrame.new(pos)
 		verticalCylinder(folder, base * CFrame.new(0, 4, 0), 8, 0.5, Color3.fromRGB(35, 35, 40), Enum.Material.Metal)
@@ -605,27 +625,7 @@ local function buildDecor(model: Model, origin: CFrame, rng: Random)
 		local lamp = part(folder, base * CFrame.new(0, 7.5, 0), Vector3.new(1, 1.2, 1), Color3.fromRGB(255, 235, 180), Enum.Material.Neon)
 		light(lamp, 18, 1.2, Color3.fromRGB(255, 220, 160))
 	end
-
-	-- Klomby z kwiatami
-	local flowerColors = {
-		Color3.fromRGB(255, 80, 120), Color3.fromRGB(255, 220, 60), Color3.fromRGB(170, 90, 255),
-		Color3.fromRGB(255, 140, 40), Color3.fromRGB(250, 250, 250),
-	}
-	for _, bed in { Vector3.new(-30, 0, -6), Vector3.new(-50, 0, -6), Vector3.new(30, 0, 8), Vector3.new(-24, 0, 50) } do
-		local b = origin * CFrame.new(bed)
-		part(folder, b * CFrame.new(0, 0.4, 0), Vector3.new(10, 0.8, 4), Color3.fromRGB(90, 60, 40), Enum.Material.Ground)
-		for _ = 1, 14 do
-			local flower = part(
-				folder,
-				b * CFrame.new(rng:NextNumber(-4.4, 4.4), 1.2, rng:NextNumber(-1.6, 1.6)),
-				Vector3.one * rng:NextNumber(0.6, 0.9),
-				flowerColors[rng:NextInteger(1, #flowerColors)],
-				Enum.Material.SmoothPlastic,
-				{ CanCollide = false }
-			)
-			flower.Shape = Enum.PartType.Ball
-		end
-	end
+	return beam
 end
 
 PlotBuilder.MAX_SLOTS = MAX_SLOTS
@@ -641,10 +641,8 @@ function PlotBuilder.Build(index: number, origin: CFrame, parent: Instance)
 	local mineLabel, minePositions = buildMine(model, origin, rng)
 	local shopPrompt = buildShop(model, origin)
 	local vault = buildVault(model, origin)
-	buildDecor(model, origin, rng)
-
-	local sign = part(model, origin * CFrame.new(-10, 3, 24), Vector3.new(10, 4, 0.6), Color3.fromRGB(60, 40, 25), Enum.Material.WoodPlanks)
-	local signLabel = billboard(sign, 4, UDim2.fromOffset(260, 50), "Wolna działka")
+	local gateSign = buildBase(model, origin)
+	local signLabel = billboard(gateSign, 4, UDim2.fromOffset(280, 54), "Wolna działka")
 
 	model.Parent = parent
 
