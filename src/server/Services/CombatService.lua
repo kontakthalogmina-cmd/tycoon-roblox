@@ -16,6 +16,7 @@ local WeaponTools = require(script.Parent.WeaponTools)
 local Remotes = require(script.Parent.Remotes)
 local AllianceService = require(script.Parent.AllianceService)
 local MonetizationService = require(script.Parent.MonetizationService)
+local BrainrotAssets = require(script.Parent.BrainrotAssets)
 local SoundFx = require(ReplicatedStorage.Shared.SoundFx)
 
 local CombatService = {}
@@ -110,10 +111,11 @@ local function brainrotBolt(from: Vector3, to: Vector3)
 	gui.Size = UDim2.fromScale(3.2, 3)
 	gui.AlwaysOnTop = true
 	gui.MaxDistance = 160
+	local image, sound = BrainrotAssets.Get(brainrot)
 	local icon
-	if brainrot.image and brainrot.image ~= "" then
+	if image ~= "" then
 		icon = Instance.new("ImageLabel")
-		icon.Image = brainrot.image
+		icon.Image = image
 		icon.ScaleType = Enum.ScaleType.Fit
 	else
 		icon = Instance.new("TextLabel")
@@ -150,7 +152,7 @@ local function brainrotBolt(from: Vector3, to: Vector3)
 	-- Brainrot kręci się w locie.
 	TweenService:Create(icon, TweenInfo.new(time, Enum.EasingStyle.Linear), { Rotation = icon.Rotation + (math.random() < 0.5 and -360 or 360) }):Play()
 	Debris:AddItem(bolt, time + 0.05)
-	return brainrot
+	return { sound = sound }
 end
 
 local lastVoice = {} -- [Player] = os.clock() ostatniego okrzyku

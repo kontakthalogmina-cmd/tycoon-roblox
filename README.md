@@ -1,4 +1,6 @@
-# Tycoon: Kopalnia i Fabryka (Roblox)
+# Brainrot Egg Tycoon: Kopalnia i Pisklaki (Roblox)
+
+Jak wydać grę: zobacz [RELEASE.md](RELEASE.md). Ikona i miniaturka są w `release/`.
 
 Gra typu tycoon, w której celem jest zarobienie jak największej ilości pieniędzy.
 
